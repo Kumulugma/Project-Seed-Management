@@ -1,4 +1,8 @@
 <?php
+/**
+ * LOKALIZACJA: models/LoginForm.php
+ * UWAGA: To jest modyfikacja istniejącego pliku LoginForm.php z Yii2 Basic
+ */
 
 namespace app\models;
 
@@ -19,7 +23,6 @@ class LoginForm extends Model
 
     private $_user = false;
 
-
     /**
      * @return array the validation rules.
      */
@@ -36,6 +39,18 @@ class LoginForm extends Model
     }
 
     /**
+     * @return array customized attribute labels
+     */
+    public function attributeLabels()
+    {
+        return [
+            'username' => 'Nazwa użytkownika',
+            'password' => 'Hasło',
+            'rememberMe' => 'Zapamiętaj mnie',
+        ];
+    }
+
+    /**
      * Validates the password.
      * This method serves as the inline validation for password.
      *
@@ -48,7 +63,7 @@ class LoginForm extends Model
             $user = $this->getUser();
 
             if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Incorrect username or password.');
+                $this->addError($attribute, 'Nieprawidłowa nazwa użytkownika lub hasło.');
             }
         }
     }
