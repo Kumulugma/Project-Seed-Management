@@ -128,6 +128,17 @@ $this->registerCsrfMetaTags();
         ];
     }
     
+    if (!Yii::$app->user->isGuest) {
+    // Dodaj przed menu użytkownika
+    $menuItems[] = [
+        'label' => '<button class="btn btn-outline-light btn-sm dark-mode-toggle" onclick="toggleDarkMode()" title="Przełącz tryb">' .
+                  '<i class="bi bi-moon" id="dark-mode-icon"></i>' .
+                  '</button>',
+        'encode' => false,
+        'linkOptions' => ['style' => 'padding:0; background:transparent; border:none;']
+    ];
+}
+    
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav ms-auto', 'id' => 'navbarNav'],
         'items' => $menuItems,
@@ -175,6 +186,70 @@ $this->registerCsrfMetaTags();
         </div>
     </div>
 </footer>
+    <script>
+// Dark Mode Toggle Functionality
+function toggleDarkMode() {
+    const body = document.body;
+    const icon = document.getElementById('dark-mode-icon');
+    const isDark = body.classList.contains('dark-mode');
+    
+    if (isDark) {
+        // Przełącz na light mode
+        body.classList.remove('dark-mode');
+        icon.classList.remove('bi-sun');
+        icon.classList.add('bi-moon');
+        localStorage.setItem('darkMode', 'false');
+    } else {
+        // Przełącz na dark mode
+        body.classList.add('dark-mode');
+        icon.classList.remove('bi-moon');
+        icon.classList.add('bi-sun');
+        localStorage.setItem('darkMode', 'true');
+    }
+}
+
+// Inicjalizacja dark mode przy ładowaniu strony
+document.addEventListener('DOMContentLoaded', function() {
+    const savedMode = localStorage.getItem('darkMode');
+    const icon = document.getElementById('dark-mode-icon');
+    
+    if (savedMode === 'true') {
+        document.body.classList.add('dark-mode');
+        if (icon) {
+            icon.classList.remove('bi-moon');
+            icon.classList.add('bi-sun');
+        }
+    }
+    
+    // Dodaj loading effect do wszystkich linków
+    document.querySelectorAll('a, form').forEach(element => {
+        element.addEventListener('click', function(e) {
+            // Nie dodawaj loading do dropdown toggle i podobnych
+            if (!this.hasAttribute('data-bs-toggle') && 
+                !this.classList.contains('dark-mode-toggle') &&
+                !this.classList.contains('dropdown-toggle')) {
+                
+                // Dodaj loading do elementu
+                this.classList.add('loading');
+                
+                // Usuń loading po 3 sekundach (na wypadek błędu)
+                setTimeout(() => {
+                    this.classList.remove('loading');
+                }, 3000);
+            }
+        });
+    });
+});
+
+// Loading dla AJAX requestów (jeśli używasz)
+document.addEventListener('ajaxStart', function() {
+    document.body.classList.add('loading');
+});
+
+document.addEventListener('ajaxComplete', function() {
+    document.body.classList.remove('loading');
+});
+</script>
 
 <?php $this->endBody() ?>
 </body>

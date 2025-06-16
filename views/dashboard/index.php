@@ -6,6 +6,8 @@ use yii\helpers\Url;
 
 $this->title = 'Dashboard';
 $this->params['breadcrumbs'][] = $this->title;
+$formatter = new IntlDateFormatter('pl_PL', IntlDateFormatter::FULL, IntlDateFormatter::NONE);
+$formatter->setPattern('EEEE, d MMMM yyyy');
 ?>
 
 <div class="dashboard-index">
@@ -14,7 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <h1 class="h3 text-success fw-bold mb-1">
                 <i class="bi bi-speedometer2 me-2"></i><?= Html::encode($this->title) ?>
             </h1>
-            <p class="text-muted small mb-0"><?= date('l, d F Y') ?></p>
+            <p class="text-muted small mb-0"><?= $formatter->format(new DateTime()) ?></p>
         </div>
         <div class="col-md-4 text-md-end">
             <div class="btn-group btn-group-sm" role="group">
