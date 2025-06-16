@@ -143,12 +143,20 @@ $this->registerCsrfMetaTags();
     <div class="container-fluid px-4">
         <div class="alert-container"></div>
         
+        <?php 
+        // Ukryj breadcrumb na stronie login
+        $currentRoute = Yii::$app->controller->route;
+        if ($currentRoute !== 'site/login'): 
+        ?>
+        
         <?= Breadcrumbs::widget([
             'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
             'options' => ['class' => 'breadcrumb mt-3 mb-4 bg-white'],
             'itemTemplate' => "<li class=\"breadcrumb-item\">{link}</li>\n",
             'activeItemTemplate' => "<li class=\"breadcrumb-item active\">{link}</li>\n",
         ]) ?>
+        
+        <?php endif; ?>
         
         <?= Alert::widget() ?>
         
