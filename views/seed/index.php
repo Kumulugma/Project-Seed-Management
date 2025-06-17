@@ -170,9 +170,9 @@ Html::dropDownList('status', Yii::$app->request->get('status'),
                                     <div class="mb-2">
                                         <small class="text-muted">Okres wysiewu:</small><br>
                                         <span class="small">
-                                        <?= date('d.m', strtotime($model->sowing_start)) ?> - 
-                                        <?= date('d.m', strtotime($model->sowing_end)) ?>
-                                        </span>
+<?= $model->getFormattedSowingDate('sowing_start') ?> - 
+<?= $model->getFormattedSowingDate('sowing_end') ?>
+</span>
                                         <?php if ($model->isInSowingPeriod()): ?>
                                             <span class="badge bg-success ms-1 small">Aktualny okres</span>
                                         <?php endif; ?>

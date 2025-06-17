@@ -212,7 +212,6 @@
 /* Login Components */
 .login-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
     display: flex;
     align-items: center;
     justify-content: center;

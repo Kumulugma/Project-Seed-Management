@@ -144,21 +144,36 @@ if ($model->expiry_date) {
                         },
                     ],
                     [
-                        'attribute' => 'sowing_start',
-                        'format' => 'date',
-                        'label' => 'Początek wysiewu',
-                    ],
-                    [
-                        'attribute' => 'sowing_end',
-                        'format' => 'date',
-                        'label' => 'Koniec wysiewu',
-                    ],
-                    [
-                        'label' => 'Okres wysiewu',
-                        'format' => 'html',
-                        'value' => date('d.m', strtotime($model->sowing_start)) . ' - ' . date('d.m', strtotime($model->sowing_end)) .
-                                  ($inSowingPeriod ? ' <span class="label label-success">Aktualny</span>' : ''),
-                    ],
+    'attribute' => 'sowing_start',
+    'format' => 'html',
+    'label' => 'Początek wysiewu',
+    'value' => function($model) {
+        return $model->getFormattedSowingDate('sowing_start') . ' <small class="text-muted">(' . $model->sowing_start . ')</small>';
+    },
+],
+[
+    'attribute' => 'sowing_end',
+    'format' => 'html',
+    'label' => 'Koniec wysiewu',
+    'value' => function($model) {
+        return $model->getFormattedSowingDate('sowing_end') . ' <small class="text-muted">(' . $model->sowing_end . ')</small>';
+    },
+],
+[
+    'label' => 'Okres wysiewu',
+    'format' => 'html',
+    'value' => function($model) use ($inSowingPeriod) {
+        $start = $model->getFormattedSowingDate('sowing_start');
+        $end = $model->getFormattedSowingDate('sowing_end');
+        $result = $start . ' - ' . $end;
+        
+        if ($inSowingPeriod) {
+            $result .= ' <span class="badge bg-success ms-2">Aktualny okres</span>';
+        }
+        
+        return $result;
+    },
+],
                     [
                         'attribute' => 'expiry_date',
                         'format' => 'html',

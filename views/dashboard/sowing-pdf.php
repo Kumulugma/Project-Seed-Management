@@ -162,7 +162,7 @@ body {
                 <td><?= $seed->getHeightLabel() ?></td>
                 <td><?= $seed->getPlantTypeLabel() ?></td>
                 <td style="text-align: center;">
-                    <?= date('d.m', strtotime($seed->sowing_start)) ?> - <?= date('d.m', strtotime($seed->sowing_end)) ?>
+                    <?= $seed->getFormattedSowingDate('sowing_start') ?> - <?= $seed->getFormattedSowingDate('sowing_end') ?>
                 </td>
                 <td style="text-align: center;">
                     <strong><?= $seed->priority ?></strong>

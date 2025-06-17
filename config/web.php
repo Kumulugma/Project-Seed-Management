@@ -13,7 +13,7 @@ $config = [
     'timeZone' => 'Europe/Warsaw',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
+        '@npm' => '@vendor/npm-asset',
     ],
     'components' => [
         'request' => [
@@ -53,15 +53,15 @@ $config = [
                 'logout' => 'site/logout',
                 'about' => 'site/about',
                 'change-password' => 'site/change-password',
-                'reset-password' => 'site/request-password-reset',
-                
+                // POPRAWIONE ROUTING RESETOWANIA HASŁA
+                'forgot-password' => 'site/request-password-reset',
+                'reset-password/<token:[a-zA-Z0-9_-]+>' => 'site/reset-password',
                 'dashboard' => 'dashboard/index',
                 'dashboard/sowing-pdf' => 'dashboard/sowing-pdf',
                 'dashboard/germination' => 'dashboard/update-germination',
                 'dashboard/labels' => 'dashboard/print-labels',
                 'dashboard/report' => 'dashboard/germination-report',
                 'dashboard/calendar' => 'dashboard/sowing-calendar',
-                
                 'seeds' => 'seed/index',
                 'seed/create' => 'seed/create',
                 'seed/<id:\d+>' => 'seed/view',
@@ -71,7 +71,6 @@ $config = [
                 'seed/search' => 'seed/search',
                 'seed/export' => 'seed/export',
                 'seed/stats' => 'seed/stats',
-                
                 '<controller:\w+>/<action:\w+>/<id:\d+>' => '<controller>/<action>',
                 '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
             ],

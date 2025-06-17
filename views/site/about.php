@@ -1,4 +1,7 @@
 <?php
+/**
+ * LOKALIZACJA: views/site/about.php
+ */
 
 use yii\helpers\Html;
 
@@ -7,26 +10,23 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 
 <div class="about-page">
-    <div class="hero-section bg-success text-white rounded-3 p-5 mb-5">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold mb-3">
-                    <i class="bi bi-flower2 me-3"></i>System Zarządzania Nasionami
-                </h1>
-                <p class="lead mb-4">Profesjonalne narzędzie do zarządzania prywatnym zapasem nasion, planowania wysiewów i śledzenia kiełkowania.</p>
-                <div class="d-flex gap-3">
-                    <?= Html::a('<i class="bi bi-speedometer2 me-2"></i>Dashboard', ['/dashboard/index'], [
-                        'class' => 'btn btn-light btn-lg',
-                        'encode' => false
-                    ]) ?>
-                    <?= Html::a('<i class="bi bi-plus-circle me-2"></i>Dodaj nasiona', ['/seed/create'], [
-                        'class' => 'btn btn-outline-light btn-lg',
-                        'encode' => false
-                    ]) ?>
-                </div>
-            </div>
-            <div class="col-lg-4 text-center">
-                <i class="bi bi-gear-fill" style="font-size: 8rem; opacity: 0.3;"></i>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 text-primary fw-bold">
+                <i class="bi bi-info-circle me-2"></i><?= Html::encode($this->title) ?>
+            </h1>
+            <p class="lead text-muted">Profesjonalne narzędzie do zarządzania prywatnym zapasem nasion, planowania wysiewów i śledzenia kiełkowania.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="btn-group" role="group">
+                <?= Html::a('<i class="bi bi-speedometer2 me-2"></i>Dashboard', ['/dashboard/index'], [
+                    'class' => 'btn btn-success',
+                    'encode' => false
+                ]) ?>
+                <?= Html::a('<i class="bi bi-plus-circle me-2"></i>Dodaj nasiona', ['/seed/create'], [
+                    'class' => 'btn btn-outline-success',
+                    'encode' => false
+                ]) ?>
             </div>
         </div>
     </div>
@@ -34,7 +34,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="row g-4 mb-5">
         <div class="col-lg-8">
             <div class="card h-100 shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-primary text-white">
                     <h4 class="card-title mb-0">
                         <i class="bi bi-list-check me-2"></i>Funkcjonalności systemu
                     </h4>
@@ -114,37 +114,105 @@ $this->params['breadcrumbs'][] = $this->title;
                     
                     <div class="row g-3">
                         <div class="col-6">
-                            <div class="stat-item text-center p-3 bg-primary bg-opacity-10 rounded">
-                                <h3 class="text-primary mb-1"><?= $totalSeeds ?></h3>
-                                <small class="text-muted">Nasion w bazie</small>
+                            <div class="text-center">
+                                <div class="h3 text-primary mb-1"><?= $totalSeeds ?></div>
+                                <small class="text-muted">Nasion ogółem</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="stat-item text-center p-3 bg-success bg-opacity-10 rounded">
-                                <h3 class="text-success mb-1"><?= $availableSeeds ?></h3>
+                            <div class="text-center">
+                                <div class="h3 text-success mb-1"><?= $availableSeeds ?></div>
                                 <small class="text-muted">Dostępnych</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="stat-item text-center p-3 bg-info bg-opacity-10 rounded">
-                                <h3 class="text-info mb-1"><?= $sownTotal ?></h3>
-                                <small class="text-muted">Łącznie wysiewów</small>
+                            <div class="text-center">
+                                <div class="h3 text-info mb-1"><?= $sownTotal ?></div>
+                                <small class="text-muted">Wysianych</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="stat-item text-center p-3 bg-warning bg-opacity-10 rounded">
-                                <h3 class="text-warning mb-1"><?= $germinatedTotal ?></h3>
-                                <small class="text-muted">Wykiełkowało</small>
+                            <div class="text-center">
+                                <div class="h3 text-warning mb-1"><?= $germinatedTotal ?></div>
+                                <small class="text-muted">Wykiełkowanych</small>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mt-4">
-                        <div class="alert alert-success">
-                            <h6><i class="bi bi-check-circle me-2"></i>System działa poprawnie</h6>
-                            <p class="mb-0 small">Ostatnia aktualizacja: <?= date('d.m.Y H:i') ?></p>
+                        <div class="progress" style="height: 8px;">
+                            <?php
+                            $percentage = $sownTotal > 0 ? round(($germinatedTotal / $sownTotal) * 100) : 0;
+                            ?>
+                            <div class="progress-bar bg-success" style="width: <?= $percentage ?>%"></div>
                         </div>
+                        <small class="text-muted">Skuteczność kiełkowania: <?= $percentage ?>%</small>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technology Info -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear me-2"></i>Technologie
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Backend:</dt>
+                        <dd class="col-sm-8">PHP 8.0+ z Yii Framework 2.0</dd>
+                        
+                        <dt class="col-sm-4">Frontend:</dt>
+                        <dd class="col-sm-8">Bootstrap 5 + Custom CSS/JS</dd>
+                        
+                        <dt class="col-sm-4">Baza danych:</dt>
+                        <dd class="col-sm-8">MySQL 8.0+</dd>
+                        
+                        <dt class="col-sm-4">Ikony:</dt>
+                        <dd class="col-sm-8">Bootstrap Icons</dd>
+                        
+                        <dt class="col-sm-4">PDF:</dt>
+                        <dd class="col-sm-8">mPDF</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Wskazówki użycia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Regularnie sprawdzaj daty ważności nasion
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Używaj priorytetów do organizacji wysiewów
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Drukuj etykiety dla lepszej organizacji
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Śledź statystyki kiełkowania dla lepszych wyników
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Używaj skrótu <kbd>Ctrl+Shift+D</kbd> dla dark mode
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -177,13 +245,15 @@ $this->params['breadcrumbs'][] = $this->title;
                             </dl>
                         </div>
                         <div class="col-md-6">
-                            <div class="alert alert-info mb-0">
-                                <h6><i class="bi bi-lightbulb me-2"></i>Wskazówki:</h6>
+                            <div class="alert alert-light border mb-0">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-keyboard me-2"></i>Skróty klawiszowe:
+                                </h6>
                                 <ul class="mb-0 small">
-                                    <li>Regularnie sprawdzaj daty ważności nasion</li>
-                                    <li>Używaj priorytetów do organizacji wysiewów</li>
-                                    <li>Drukuj etykiety dla lepszej organizacji</li>
-                                    <li>Śledź statystyki kiełkowania</li>
+                                    <li><kbd>Ctrl+Shift+D</kbd> - Przełącz tryb ciemny</li>
+                                    <li><kbd>Ctrl+Shift+T</kbd> - Demo toast (development)</li>
+                                    <li><kbd>Alt+H</kbd> - Przejdź do strony głównej</li>
+                                    <li><kbd>Alt+S</kbd> - Dodaj nowe nasiona</li>
                                 </ul>
                             </div>
                         </div>

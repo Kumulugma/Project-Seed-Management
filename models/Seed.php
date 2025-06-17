@@ -1,6 +1,7 @@
 <?php
 /**
  * LOKALIZACJA: models/Seed.php
+ * POPRAWIONY MODEL Z OBSŁUGĄ DAT MM-DD
  */
 
 namespace app\models;
@@ -41,12 +42,21 @@ class Seed extends ActiveRecord
         return [
             [['name', 'type', 'height', 'plant_type', 'sowing_start', 'sowing_end'], 'required'],
             [['description', 'notes'], 'string'],
-            [['expiry_date', 'sowing_start', 'sowing_end', 'created_at', 'updated_at'], 'safe'],
+            [['expiry_date', 'created_at', 'updated_at'], 'safe'],
             [['purchase_year', 'priority'], 'integer'],
             [['purchase_year'], 'integer', 'min' => 2000, 'max' => 2030],
             [['priority'], 'integer', 'min' => 0, 'max' => 10],
             [['name'], 'string', 'max' => 255],
             [['image_path'], 'string', 'max' => 255],
+            
+            // POPRAWIONA WALIDACJA DAT MM-DD
+            [['sowing_start', 'sowing_end'], 'string', 'length' => 5],
+            [['sowing_start', 'sowing_end'], 'match', 
+                'pattern' => '/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', 
+                'message' => 'Format daty musi być MM-DD (np. 03-15)'
+            ],
+            [['sowing_start', 'sowing_end'], 'validateMonthDay'],
+            
             [['type'], 'in', 'range' => [self::TYPE_VEGETABLES, self::TYPE_FLOWERS, self::TYPE_HERBS]],
             [['height'], 'in', 'range' => [self::HEIGHT_LOW, self::HEIGHT_HIGH]],
             [['plant_type'], 'in', 'range' => [self::PLANT_TYPE_ANNUAL, self::PLANT_TYPE_PERENNIAL]],
@@ -55,9 +65,50 @@ class Seed extends ActiveRecord
             [['priority'], 'default', 'value' => 0],
             [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, gif'],
             [['imageFile'], 'file', 'maxSize' => 1024 * 1024 * 2], // 2MB
-            // Walidacja dat wysiewu
-            ['sowing_end', 'validateSowingPeriod'],
         ];
+    }
+
+    /**
+     * Walidacja dat w formacie MM-DD
+     */
+    public function validateMonthDay($attribute, $params)
+    {
+        $value = $this->$attribute;
+        if (empty($value)) {
+            return;
+        }
+
+        // Sprawdź format MM-DD
+        if (!preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $value)) {
+            $this->addError($attribute, 'Format daty musi być MM-DD (np. 03-15)');
+            return;
+        }
+
+        // Sprawdź czy data jest prawidłowa
+        list($month, $day) = explode('-', $value);
+        $month = (int)$month;
+        $day = (int)$day;
+
+        // Sprawdź czy miesiąc jest prawidłowy
+        if ($month < 1 || $month > 12) {
+            $this->addError($attribute, 'Miesiąc musi być z zakresu 01-12');
+            return;
+        }
+
+        // Sprawdź czy dzień jest prawidłowy dla danego miesiąca
+        $daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // 29 dla lutego (rok przestępny)
+        if ($day < 1 || $day > $daysInMonth[$month - 1]) {
+            $this->addError($attribute, "Dzień {$day} jest nieprawidłowy dla miesiąca " . sprintf('%02d', $month));
+            return;
+        }
+
+        // Sprawdź luty szczególnie
+        if ($month == 2 && $day > 28) {
+            // Dla prostoty przyjmujemy że lata przestępne są co 4 lata
+            // W rzeczywistości to bardziej skomplikowane, ale dla dat MM-DD wystarczy
+            $this->addError($attribute, 'Dla lutego maksymalny dzień to 28 (lub 29 w roku przestępnym)');
+            return;
+        }
     }
 
     public function attributeLabels()
@@ -66,14 +117,15 @@ class Seed extends ActiveRecord
             'id' => 'ID',
             'name' => 'Nazwa',
             'description' => 'Opis',
+            'notes' => 'Notatki',
             'image_path' => 'Zdjęcie opakowania',
             'imageFile' => 'Zdjęcie opakowania',
             'expiry_date' => 'Data ważności',
             'purchase_year' => 'Rok zakupu',
             'height' => 'Wysokość rośliny',
             'type' => 'Typ',
-            'sowing_start' => 'Początek okresu wysiewu',
-            'sowing_end' => 'Koniec okresu wysiewu',
+            'sowing_start' => 'Początek okresu wysiewu (MM-DD)',
+            'sowing_end' => 'Koniec okresu wysiewu (MM-DD)',
             'plant_type' => 'Typ rośliny',
             'status' => 'Status',
             'priority' => 'Priorytet (0-10)',
@@ -83,14 +135,127 @@ class Seed extends ActiveRecord
     }
 
     /**
-     * Walidacja okresu wysiewu
+     * Hook przed zapisem - nie konwertuj dat MM-DD
      */
-    public function validateSowingPeriod($attribute, $params)
+    public function beforeSave($insert)
     {
-        if ($this->sowing_start && $this->sowing_end) {
-            if (strtotime($this->sowing_end) < strtotime($this->sowing_start)) {
-                $this->addError($attribute, 'Koniec wysiewu nie może być wcześniejszy niż początek.');
+        if (parent::beforeSave($insert)) {
+            // Upewnij się że daty są w formacie MM-DD
+            if ($this->sowing_start && !preg_match('/^\d{2}-\d{2}$/', $this->sowing_start)) {
+                // Jeśli przyszła pełna data z formularza, wyciągnij MM-DD
+                if (preg_match('/^\d{4}-(\d{2})-(\d{2})$/', $this->sowing_start, $matches)) {
+                    $this->sowing_start = $matches[1] . '-' . $matches[2];
+                }
             }
+            
+            if ($this->sowing_end && !preg_match('/^\d{2}-\d{2}$/', $this->sowing_end)) {
+                // Jeśli przyszła pełna data z formularza, wyciągnij MM-DD
+                if (preg_match('/^\d{4}-(\d{2})-(\d{2})$/', $this->sowing_end, $matches)) {
+                    $this->sowing_end = $matches[1] . '-' . $matches[2];
+                }
+            }
+            
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Hook po wczytaniu - konwertuj daty MM-DD do pełnych dat dla formularza
+     */
+    public function afterFind()
+    {
+        parent::afterFind();
+        
+        // Te konwersje są potrzebne tylko do wyświetlania w niektórych miejscach
+        // Podstawowe przechowywanie pozostaje MM-DD
+    }
+
+    /**
+     * Konwertuje datę MM-DD na pełną datę dla aktualnego roku (do wyświetlania)
+     */
+    public function getFullSowingDate($field, $year = null)
+    {
+        if ($year === null) {
+            $year = date('Y');
+        }
+        
+        $monthDay = $this->$field;
+        if (!$monthDay || !preg_match('/^\d{2}-\d{2}$/', $monthDay)) {
+            return null;
+        }
+        
+        return $year . '-' . $monthDay;
+    }
+
+    /**
+     * Zwraca sformatowaną datę do wyświetlania (dd.mm)
+     */
+    public function getFormattedSowingDate($field)
+    {
+        $monthDay = $this->$field;
+        if (!$monthDay || !preg_match('/^(\d{2})-(\d{2})$/', $monthDay, $matches)) {
+            return '';
+        }
+        
+        return $matches[2] . '.' . $matches[1]; // DD.MM
+    }
+
+    /**
+     * Pobiera nasiona do wysiewu w danym terminie
+     */
+    public static function getSowingSeeds($date = null)
+    {
+        if ($date === null) {
+            $date = date('Y-m-d');
+        }
+        
+        $currentMonthDay = date('m-d', strtotime($date));
+        
+        return self::find()
+            ->where(['status' => self::STATUS_AVAILABLE])
+            ->andWhere([
+                'or',
+                // Normalny przypadek - sowing_start <= current <= sowing_end
+                [
+                    'and',
+                    ['<=', 'sowing_start', $currentMonthDay],
+                    ['>=', 'sowing_end', $currentMonthDay]
+                ],
+                // Przypadek przejścia przez nowy rok (np. 12-01 do 02-28)
+                [
+                    'and',
+                    ['>', 'sowing_start', 'sowing_end'],
+                    [
+                        'or',
+                        ['<=', 'sowing_start', $currentMonthDay],
+                        ['>=', 'sowing_end', $currentMonthDay]
+                    ]
+                ]
+            ])
+            ->orderBy(['priority' => SORT_DESC, 'name' => SORT_ASC])
+            ->all();
+    }
+
+    /**
+     * Sprawdza czy nasiono jest w okresie wysiewu
+     */
+    public function isInSowingPeriod($date = null)
+    {
+        if ($date === null) {
+            $date = date('Y-m-d');
+        }
+        
+        $currentMonthDay = date('m-d', strtotime($date));
+        $sowingStart = $this->sowing_start;
+        $sowingEnd = $this->sowing_end;
+        
+        if ($sowingStart <= $sowingEnd) {
+            // Normalny przypadek (np. 03-01 do 05-31)
+            return $currentMonthDay >= $sowingStart && $currentMonthDay <= $sowingEnd;
+        } else {
+            // Przejście przez nowy rok (np. 12-01 do 02-28)
+            return $currentMonthDay >= $sowingStart || $currentMonthDay <= $sowingEnd;
         }
     }
 
@@ -140,97 +305,6 @@ class Seed extends ActiveRecord
     }
 
     /**
-     * Upload pliku zdjęcia
-     */
-    public function upload()
-    {
-        if ($this->validate() && $this->imageFile) {
-            $fileName = time() . '_' . uniqid() . '.' . $this->imageFile->extension;
-            $filePath = Yii::getAlias('@webroot/uploads/') . $fileName;
-            
-            if ($this->imageFile->saveAs($filePath)) {
-                // Usuń poprzednie zdjęcie jeśli istnieje
-                if ($this->image_path) {
-                    $oldFile = Yii::getAlias('@webroot/uploads/') . $this->image_path;
-                    if (file_exists($oldFile)) {
-                        unlink($oldFile);
-                    }
-                }
-                
-                $this->image_path = $fileName;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Pobiera nasiona do wysiewu w danym terminie
-     */
-    public static function getSowingSeeds($date = null)
-    {
-        if ($date === null) {
-            $date = date('Y-m-d');
-        }
-        
-        $currentMonthDay = date('m-d', strtotime($date));
-        
-        return self::find()
-            ->where(['status' => self::STATUS_AVAILABLE])
-            ->andWhere([
-                'or',
-                // Normalny przypadek - sowing_start <= current <= sowing_end
-                [
-                    'and',
-                    "DATE_FORMAT(sowing_start, '%m-%d') <= :date",
-                    "DATE_FORMAT(sowing_end, '%m-%d') >= :date"
-                ],
-                // Przypadek przejścia przez nowy rok (np. 12-01 do 02-28)
-                [
-                    'and',
-                    "DATE_FORMAT(sowing_start, '%m-%d') > DATE_FORMAT(sowing_end, '%m-%d')",
-                    [
-                        'or',
-                        "DATE_FORMAT(sowing_start, '%m-%d') <= :date",
-                        "DATE_FORMAT(sowing_end, '%m-%d') >= :date"
-                    ]
-                ]
-            ], [':date' => $currentMonthDay])
-            ->orderBy(['priority' => SORT_DESC, 'name' => SORT_ASC])
-            ->all();
-    }
-
-    /**
-     * Relacja z wysialiskami
-     */
-    public function getSownSeeds()
-    {
-        return $this->hasMany(SownSeed::class, ['seed_id' => 'id']);
-    }
-
-    /**
-     * Sprawdza czy nasiono jest w okresie wysiewu
-     */
-    public function isInSowingPeriod($date = null)
-    {
-        if ($date === null) {
-            $date = date('Y-m-d');
-        }
-        
-        $currentMonthDay = date('m-d', strtotime($date));
-        $sowingStart = date('m-d', strtotime($this->sowing_start));
-        $sowingEnd = date('m-d', strtotime($this->sowing_end));
-        
-        if ($sowingStart <= $sowingEnd) {
-            // Normalny przypadek
-            return $currentMonthDay >= $sowingStart && $currentMonthDay <= $sowingEnd;
-        } else {
-            // Przejście przez nowy rok
-            return $currentMonthDay >= $sowingStart || $currentMonthDay <= $sowingEnd;
-        }
-    }
-
-    /**
      * Formatuje typ dla wyświetlenia
      */
     public function getTypeLabel()
@@ -267,6 +341,39 @@ class Seed extends ActiveRecord
     }
 
     /**
+     * Upload pliku zdjęcia
+     */
+    public function upload()
+    {
+        if ($this->validate() && $this->imageFile) {
+            $fileName = time() . '_' . uniqid() . '.' . $this->imageFile->extension;
+            $filePath = Yii::getAlias('@webroot/uploads/') . $fileName;
+            
+            if ($this->imageFile->saveAs($filePath)) {
+                // Usuń poprzednie zdjęcie jeśli istnieje
+                if ($this->image_path) {
+                    $oldFile = Yii::getAlias('@webroot/uploads/') . $this->image_path;
+                    if (file_exists($oldFile)) {
+                        unlink($oldFile);
+                    }
+                }
+                
+                $this->image_path = $fileName;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Relacja z wysialiskami
+     */
+    public function getSownSeeds()
+    {
+        return $this->hasMany(SownSeed::class, ['seed_id' => 'id']);
+    }
+
+    /**
      * Zwraca ścieżkę do zdjęcia
      */
     public function getImageUrl()
@@ -275,38 +382,5 @@ class Seed extends ActiveRecord
             return Yii::getAlias('@web/uploads/') . $this->image_path;
         }
         return null;
-    }
-
-    /**
-     * Hook przed zapisem
-     */
-    public function beforeSave($insert)
-    {
-        if (parent::beforeSave($insert)) {
-            // Upload zdjęcia jeśli zostało wybrane
-            if ($this->imageFile) {
-                $this->upload();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Hook przed usunięciem
-     */
-    public function beforeDelete()
-    {
-        if (parent::beforeDelete()) {
-            // Usuń plik zdjęcia
-            if ($this->image_path) {
-                $filePath = Yii::getAlias('@webroot/uploads/') . $this->image_path;
-                if (file_exists($filePath)) {
-                    unlink($filePath);
-                }
-            }
-            return true;
-        }
-        return false;
     }
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * LOKALIZACJA: controllers/SiteController.php
- * UWAGA: To jest modyfikacja istniejącego pliku SiteController.php z Yii2 Basic
+ * KOMPLETNY KONTROLER Z METODĄ actionResetPassword
  */
 
 namespace app\controllers;
@@ -12,8 +12,9 @@ use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
-use app\models\ContactForm;
 use app\models\User;
+use app\models\PasswordResetToken;
+use yii\base\DynamicModel;
 
 class SiteController extends Controller
 {
@@ -25,10 +26,10 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['logout'],
+                'only' => ['logout', 'change-password'],
                 'rules' => [
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['logout', 'change-password'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -61,15 +62,14 @@ class SiteController extends Controller
 
     /**
      * Displays homepage.
-     * Przekierowanie do dashboardu dla zalogowanych użytkowników
      */
     public function actionIndex()
     {
-        if (!Yii::$app->user->isGuest) {
-            return $this->redirect(['/dashboard/index']);
+        if (Yii::$app->user->isGuest) {
+            return $this->redirect(['/site/login']);
         }
         
-        return $this->redirect(['/site/login']);
+        return $this->redirect(['/dashboard/index']);
     }
 
     /**
@@ -98,14 +98,8 @@ class SiteController extends Controller
     public function actionLogout()
     {
         Yii::$app->user->logout();
-
         return $this->redirect(['/site/login']);
     }
-
-    /**
-     * Displays contact page.
-     * Usunięte - nie potrzebne w systemie zarządzania nasionami
-     */
 
     /**
      * Displays about page.
@@ -120,21 +114,38 @@ class SiteController extends Controller
      */
     public function actionRequestPasswordReset()
     {
-        $model = new \yii\base\DynamicModel(['email']);
-        $model->addRule(['email'], 'required');
-        $model->addRule(['email'], 'email');
+        $model = new DynamicModel(['email']);
+        $model->addRule(['email'], 'required', ['message' => 'Email jest wymagany.']);
+        $model->addRule(['email'], 'email', ['message' => 'Nieprawidłowy format email.']);
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
             $user = User::find()->where(['email' => $model->email])->one();
             
             if ($user) {
-                // W rzeczywistej aplikacji tutaj wysłałbyś email
-                // Na potrzeby tej aplikacji po prostu wyświetl komunikat
-                Yii::$app->session->setFlash('success', 
-                    'Jeśli adres email istnieje w systemie, został wysłany link do resetowania hasła. ' .
-                    'W wersji demonstracyjnej skontaktuj się z administratorem.');
+                // Generuj token
+                $token = PasswordResetToken::generateToken($user->id);
+                
+                if ($token) {
+                    // W rzeczywistej aplikacji wysłałbyś email z linkiem
+                    // Na potrzeby demonstracji pokażemy link w komunikacie
+                    $resetUrl = Yii::$app->urlManager->createAbsoluteUrl([
+                        'site/reset-password', 
+                        'token' => $token
+                    ]);
+                    
+                    Yii::$app->session->setFlash('success', 
+                        'Link do resetowania hasła został wygenerowany:<br>' .
+                        '<strong><a href="' . $resetUrl . '">' . $resetUrl . '</a></strong><br>' .
+                        '<small>W rzeczywistej aplikacji zostałby wysłany na email.</small>'
+                    );
+                } else {
+                    Yii::$app->session->setFlash('error', 'Wystąpił błąd podczas generowania tokenu.');
+                }
             } else {
-                Yii::$app->session->setFlash('error', 'Nie znaleziono użytkownika o podanym adresie email.');
+                // Nie ujawniamy czy email istnieje w systemie
+                Yii::$app->session->setFlash('success', 
+                    'Jeśli adres email istnieje w systemie, został wysłany link do resetowania hasła.'
+                );
             }
             
             return $this->redirect(['login']);
@@ -142,6 +153,59 @@ class SiteController extends Controller
 
         return $this->render('request-password-reset', [
             'model' => $model,
+        ]);
+    }
+
+    /**
+     * Resetowanie hasła - formularz nowego hasła (BRAKUJĄCA METODA!)
+     */
+    public function actionResetPassword($token = null)
+    {
+        if (!$token) {
+            throw new \yii\web\BadRequestHttpException('Brak tokenu resetowania hasła.');
+        }
+
+        // Sprawdź czy token jest ważny
+        if (!PasswordResetToken::isTokenValid($token)) {
+            Yii::$app->session->setFlash('error', 
+                'Token resetowania hasła jest nieprawidłowy lub wygasł. Spróbuj ponownie.');
+            return $this->redirect(['request-password-reset']);
+        }
+
+        $user = PasswordResetToken::findUserByToken($token);
+        if (!$user) {
+            Yii::$app->session->setFlash('error', 'Nie znaleziono użytkownika.');
+            return $this->redirect(['request-password-reset']);
+        }
+
+        $model = new DynamicModel(['newPassword', 'confirmPassword']);
+        $model->addRule(['newPassword', 'confirmPassword'], 'required');
+        $model->addRule(['newPassword'], 'string', ['min' => 6, 'message' => 'Hasło musi mieć co najmniej 6 znaków.']);
+        $model->addRule(['confirmPassword'], 'compare', [
+            'compareAttribute' => 'newPassword',
+            'message' => 'Hasła muszą być identyczne.'
+        ]);
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            // Ustaw nowe hasło
+            $user->setPassword($model->newPassword);
+            $user->generateAuthKey();
+            
+            if ($user->save()) {
+                // Usuń token po użyciu
+                PasswordResetToken::deleteToken($token);
+                
+                Yii::$app->session->setFlash('success', 
+                    'Hasło zostało zmienione pomyślnie. Możesz się teraz zalogować.');
+                return $this->redirect(['login']);
+            } else {
+                Yii::$app->session->setFlash('error', 'Wystąpił błąd podczas zmiany hasła.');
+            }
+        }
+
+        return $this->render('reset-password', [
+            'model' => $model,
+            'user' => $user,  // PRZEKAZUJEMY ZMIENNĄ $user DO WIDOKU!
         ]);
     }
 
@@ -154,7 +218,7 @@ class SiteController extends Controller
             return $this->redirect(['/site/login']);
         }
 
-        $model = new \yii\base\DynamicModel(['currentPassword', 'newPassword', 'confirmPassword']);
+        $model = new DynamicModel(['currentPassword', 'newPassword', 'confirmPassword']);
         $model->addRule(['currentPassword', 'newPassword', 'confirmPassword'], 'required');
         $model->addRule(['newPassword'], 'string', ['min' => 6]);
         $model->addRule(['confirmPassword'], 'compare', ['compareAttribute' => 'newPassword']);
@@ -183,7 +247,21 @@ class SiteController extends Controller
     }
 
     /**
-     * Test połączenia z bazą danych
+     * Czyści wygasłe tokeny resetowania hasła (może być wywołane przez cron)
+     */
+    public function actionCleanExpiredTokens()
+    {
+        $deleted = PasswordResetToken::cleanExpiredTokens();
+        
+        if (Yii::$app->request->isConsoleRequest) {
+            echo "Usunięto {$deleted} wygasłych tokenów.\n";
+        } else {
+            return $this->asJson(['deleted' => $deleted]);
+        }
+    }
+
+    /**
+     * Test połączenia z bazą danych (tylko development)
      */
     public function actionTestDb()
     {

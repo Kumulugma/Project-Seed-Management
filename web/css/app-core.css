@@ -614,15 +614,26 @@ body.site-login .breadcrumb {
         transparent, 
         rgba(25, 135, 84, 0.6), 
         transparent) !important;
-    animation: loading 1.2s infinite !important;
+    animation: shimmer 1.5s infinite !important;
     z-index: 2 !important;
     border-radius: inherit !important;
 }
 
-@keyframes loading {
-    0% { left: -100%; opacity: 0; }
-    50% { opacity: 1; }
-    100% { left: 100%; opacity: 0; }
+@keyframes shimmer {
+    0% { 
+        left: -100%; 
+        opacity: 0;
+        transform: skewX(-10deg);
+    }
+    50% { 
+        opacity: 1;
+        transform: skewX(-10deg);
+    }
+    100% { 
+        left: 100%; 
+        opacity: 0;
+        transform: skewX(-10deg);
+    }
 }
 
 .loading.big-loader::before {
@@ -636,15 +647,40 @@ body.site-login .breadcrumb {
     border: 2px solid rgba(25, 135, 84, 0.3) !important;
     border-top-color: #198754 !important;
     border-radius: 50% !important;
-    animation: spin 1s linear infinite !important;
+    animation: spin 0.8s linear infinite !important;
     z-index: 3 !important;
 }
 
 @keyframes spin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+    to { 
+        transform: translate(-50%, -50%) rotate(360deg); 
+    }
 }
 
-/* Page loading */
+/* Pulse effect for buttons */
+.loading.btn::after {
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.4), 
+        transparent) !important;
+    animation: buttonShimmer 1.2s infinite !important;
+}
+
+@keyframes buttonShimmer {
+    0% { 
+        left: -100%; 
+        opacity: 0;
+    }
+    50% { 
+        opacity: 1;
+    }
+    100% { 
+        left: 100%; 
+        opacity: 0;
+    }
+}
+
+/* Page loading overlay */
 body.page-loading::before {
     content: '' !important;
     position: fixed !important;
@@ -657,6 +693,7 @@ body.page-loading::before {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    backdrop-filter: blur(2px) !important;
 }
 
 body.page-loading::after {
@@ -665,13 +702,148 @@ body.page-loading::after {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    width: 40px !important;
-    height: 40px !important;
-    border: 4px solid rgba(255, 255, 255, 0.3) !important;
+    width: 50px !important;
+    height: 50px !important;
+    border: 4px solid rgba(255, 255, 255, 0.2) !important;
     border-top-color: #ffffff !important;
     border-radius: 50% !important;
-    animation: spin 1s linear infinite !important;
+    animation: pageSpinner 1s linear infinite !important;
     z-index: 10000 !important;
+}
+
+@keyframes pageSpinner {
+    to { 
+        transform: translate(-50%, -50%) rotate(360deg); 
+    }
+}
+
+/* Dark mode loading animations */
+.dark-mode .loading::after {
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(74, 222, 128, 0.6), 
+        transparent) !important;
+}
+
+.dark-mode .loading.big-loader::before {
+    border-color: rgba(74, 222, 128, 0.3) !important;
+    border-top-color: #4ade80 !important;
+}
+
+.dark-mode body.page-loading::before {
+    background: rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark-mode body.page-loading::after {
+    border-color: rgba(74, 222, 128, 0.3) !important;
+    border-top-color: #4ade80 !important;
+}
+
+/* Smooth transitions */
+.loading {
+    transition: opacity 0.3s ease !important;
+}
+
+/* Loading states for different elements */
+.loading.card {
+    transform: scale(0.98) !important;
+    transition: transform 0.3s ease !important;
+}
+
+.loading.btn {
+    transform: scale(0.95) !important;
+    transition: transform 0.2s ease !important;
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .loading::after,
+    .loading.big-loader::before,
+    body.page-loading::after {
+        animation: none !important;
+    }
+    
+    .loading::after {
+        background: rgba(25, 135, 84, 0.3) !important;
+    }
+    
+    .dark-mode .loading::after {
+        background: rgba(74, 222, 128, 0.3) !important;
+    }
+}
+
+/* Loading skeleton effect */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        #f0f0f0 25%, 
+        #e0e0e0 50%, 
+        #f0f0f0 75%) !important;
+    background-size: 200% 100% !important;
+    animation: skeleton 1.5s infinite !important;
+}
+
+@keyframes skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.dark-mode .loading-skeleton {
+    background: linear-gradient(90deg, 
+        #2a2a2a 25%, 
+        #3a3a3a 50%, 
+        #2a2a2a 75%) !important;
+    background-size: 200% 100% !important;
+}
+
+/* Enhanced loading for specific elements */
+.table.loading tbody tr {
+    opacity: 0.6 !important;
+}
+
+.form-control.loading {
+    background-image: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(25, 135, 84, 0.1) 50%, 
+        transparent 100%) !important;
+    background-size: 200% 100% !important;
+    animation: inputShimmer 2s infinite !important;
+}
+
+@keyframes inputShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Loading indicator for async operations */
+.async-loading {
+    position: relative !important;
+}
+
+.async-loading::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -2px !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, 
+        transparent, 
+        #198754, 
+        transparent) !important;
+    animation: progressBar 1.5s infinite !important;
+    z-index: 1000 !important;
+}
+
+@keyframes progressBar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.dark-mode .async-loading::before {
+    background: linear-gradient(90deg, 
+        transparent, 
+        #4ade80, 
+        transparent) !important;
 }
 
 /* === 17. DARK MODE STYLES - POPRAWIONY KONTRAST === */

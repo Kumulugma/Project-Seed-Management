@@ -1,6 +1,6 @@
 /**
- * SYSTEM NASION - DARK MODE I LOADING ANIMATIONS
- * Plik: web/js/app-darkmode.js
+ * LOKALIZACJA: web/js/app-darkmode.js
+ * SYSTEM NASION - DARK MODE I LOADING ANIMATIONS (POPRAWIONY)
  */
 
 'use strict';
@@ -175,82 +175,6 @@ function hidePageLoading() {
 }
 
 /**
- * Inicjalizacja loading effects dla różnych elementów
- */
-function initializeLoadingEffects() {
-    console.log('Inicjalizacja loading effects...');
-    
-    // Loading dla linków nawigacyjnych
-    document.querySelectorAll('a').forEach(link => {
-        // Pomiń dropdown toggles, anchors i javascript links
-        if (shouldAddLoadingToLink(link)) {
-            link.addEventListener('click', function(e) {
-                // Nie dodawaj loading jeśli link otwiera w nowym oknie
-                if (this.target === '_blank') return;
-                
-                console.log('Loading dla linku:', this.href);
-                showLoading(this, { duration: 3000 });
-            });
-        }
-    });
-    
-    // Loading dla formularzy
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            console.log('Loading dla formularza');
-            
-            // Znajdź submit button
-            const submitBtn = this.querySelector('button[type="submit"], input[type="submit"]');
-            if (submitBtn) {
-                showLoading(submitBtn, { 
-                    bigLoader: true, 
-                    message: 'Wysyłanie...' 
-                });
-                
-                // Zablokuj przycisk
-                submitBtn.disabled = true;
-                const originalText = submitBtn.textContent || submitBtn.value;
-                
-                if (submitBtn.tagName === 'BUTTON') {
-                    submitBtn.textContent = 'Wysyłanie...';
-                } else {
-                    submitBtn.value = 'Wysyłanie...';
-                }
-                
-                // Przywróć po 10 sekundach (safety)
-                setTimeout(() => {
-                    hideLoading(submitBtn);
-                    submitBtn.disabled = false;
-                    if (submitBtn.tagName === 'BUTTON') {
-                        submitBtn.textContent = originalText;
-                    } else {
-                        submitBtn.value = originalText;
-                    }
-                }, 10000);
-            }
-        });
-    });
-    
-    // Loading dla przycisków akcji
-    document.querySelectorAll('.btn:not(.dark-mode-toggle):not([data-bs-toggle])').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            // Pomiń jeśli to dropdown toggle lub modal
-            if (this.hasAttribute('data-bs-toggle') || 
-                this.classList.contains('dropdown-toggle') ||
-                this.classList.contains('dark-mode-toggle')) {
-                return;
-            }
-            
-            // Pomiń jeśli to submit button (obsługiwany przez formularz)
-            if (this.type === 'submit') return;
-            
-            console.log('Loading dla przycisku');
-            showLoading(this, { duration: 2000 });
-        });
-    });
-}
-
-/**
  * Sprawdź czy link powinien mieć loading effect
  */
 function shouldAddLoadingToLink(link) {
@@ -266,8 +190,107 @@ function shouldAddLoadingToLink(link) {
         link.href === '' ||                              // Empty href
         link.href === window.location.href ||           // Same page
         link.download ||                                 // Download links
-        link.target === '_blank'                         // External links
+        link.target === '_blank' ||                      // External links
+        link.href.includes('/export') ||                // CSV export links
+        link.href.includes('download') ||               // Download links
+        link.href.includes('.pdf') ||                   // PDF links
+        link.href.includes('.csv')                      // CSV links
     );
+}
+
+/**
+ * Sprawdź czy formularz powinien mieć loading effect
+ */
+function shouldAddLoadingToForm(form) {
+    // Pomiń loading dla:
+    return !(
+        form.action.includes('/export') ||               // CSV export
+        form.method.toLowerCase() === 'get' ||           // GET forms (search, filters)
+        form.hasAttribute('data-no-loading') ||          // Explicit no-loading
+        form.querySelector('input[type="file"]') ||      // File upload forms
+        form.action.includes('download')                 // Download forms
+    );
+}
+
+/**
+ * Inicjalizacja loading effects dla różnych elementów
+ */
+function initializeLoadingEffects() {
+    console.log('Inicjalizacja loading effects...');
+    
+    // Loading dla linków nawigacyjnych
+    document.querySelectorAll('a').forEach(link => {
+        if (shouldAddLoadingToLink(link)) {
+            link.addEventListener('click', function(e) {
+                // Nie dodawaj loading jeśli link otwiera w nowym oknie
+                if (this.target === '_blank') return;
+                
+                console.log('Loading dla linku:', this.href);
+                showLoading(this, { duration: 3000 });
+            });
+        }
+    });
+    
+    // Loading dla formularzy (z wykluczeniem eksportów)
+    document.querySelectorAll('form').forEach(form => {
+        if (shouldAddLoadingToForm(form)) {
+            form.addEventListener('submit', function(e) {
+                console.log('Loading dla formularza:', this.action);
+                
+                // Znajdź submit button
+                const submitBtn = this.querySelector('button[type="submit"], input[type="submit"]');
+                if (submitBtn) {
+                    showLoading(submitBtn, { 
+                        bigLoader: true, 
+                        message: 'Wysyłanie...' 
+                    });
+                    
+                    // Zablokuj przycisk
+                    submitBtn.disabled = true;
+                    const originalText = submitBtn.textContent || submitBtn.value;
+                    
+                    if (submitBtn.tagName === 'BUTTON') {
+                        submitBtn.textContent = 'Wysyłanie...';
+                    } else {
+                        submitBtn.value = 'Wysyłanie...';
+                    }
+                    
+                    // Przywróć po 10 sekundach (safety)
+                    setTimeout(() => {
+                        hideLoading(submitBtn);
+                        submitBtn.disabled = false;
+                        if (submitBtn.tagName === 'BUTTON') {
+                            submitBtn.textContent = originalText;
+                        } else {
+                            submitBtn.value = originalText;
+                        }
+                    }, 10000);
+                }
+            });
+        }
+    });
+    
+    // Loading dla przycisków akcji (z wykluczeniem niektórych)
+    document.querySelectorAll('.btn:not(.dark-mode-toggle):not([data-bs-toggle])').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Pomiń jeśli to dropdown toggle, modal, lub download
+            if (this.hasAttribute('data-bs-toggle') || 
+                this.classList.contains('dropdown-toggle') ||
+                this.classList.contains('dark-mode-toggle') ||
+                this.href && (this.href.includes('/export') || 
+                             this.href.includes('download') ||
+                             this.href.includes('.csv') ||
+                             this.href.includes('.pdf'))) {
+                return;
+            }
+            
+            // Pomiń jeśli to submit button (obsługiwany przez formularz)
+            if (this.type === 'submit') return;
+            
+            console.log('Loading dla przycisku');
+            showLoading(this, { duration: 2000 });
+        });
+    });
 }
 
 // ===============================================
@@ -307,35 +330,33 @@ function initializeAjaxLoading() {
         });
     }
     
-    // Fetch API interceptor
-    if (window.fetch) {
-        const originalFetch = window.fetch;
-        window.fetch = function(...args) {
-            ajaxCounter++;
-            showPageLoading();
-            console.log('Fetch start - counter:', ajaxCounter);
-            
-            return originalFetch.apply(this, args)
-                .then(response => {
-                    ajaxCounter--;
-                    if (ajaxCounter <= 0) {
-                        ajaxCounter = 0;
-                        hidePageLoading();
-                        console.log('Fetch complete - counter:', ajaxCounter);
-                    }
-                    return response;
-                })
-                .catch(error => {
-                    ajaxCounter--;
-                    if (ajaxCounter <= 0) {
-                        ajaxCounter = 0;
-                        hidePageLoading();
-                        console.log('Fetch error - counter:', ajaxCounter);
-                    }
-                    throw error;
-                });
-        };
-    }
+    // Fetch API support
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        ajaxCounter++;
+        showPageLoading();
+        console.log('Fetch start - counter:', ajaxCounter);
+        
+        return originalFetch.apply(this, args)
+            .then(response => {
+                ajaxCounter--;
+                if (ajaxCounter <= 0) {
+                    ajaxCounter = 0;
+                    hidePageLoading();
+                    console.log('Fetch success - counter:', ajaxCounter);
+                }
+                return response;
+            })
+            .catch(error => {
+                ajaxCounter--;
+                if (ajaxCounter <= 0) {
+                    ajaxCounter = 0;
+                    hidePageLoading();
+                    console.log('Fetch error - counter:', ajaxCounter);
+                }
+                throw error;
+            });
+    };
 }
 
 // ===============================================
@@ -351,9 +372,6 @@ function initializeKeyboardShortcuts() {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
             e.preventDefault();
             toggleDarkMode();
-            
-            // Pokaż toast notification
-            showToast('Tryb ciemny przełączony', 'info');
         }
     });
 }
@@ -365,136 +383,99 @@ function initializeKeyboardShortcuts() {
 /**
  * Pokaż toast notification
  */
-function showToast(message, type = 'info', duration = 3000) {
-    // Usuń poprzednie toast-y
-    document.querySelectorAll('.app-toast').forEach(toast => toast.remove());
+function showToast(message, type = 'info', duration = 5000) {
+    // Utwórz container jeśli nie istnieje
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1050';
+        document.body.appendChild(container);
+    }
     
-    // Utwórz nowy toast
+    // Utwórz toast
     const toast = document.createElement('div');
-    toast.className = `app-toast toast-${type}`;
-    toast.textContent = message;
+    toast.className = 'toast show';
+    toast.setAttribute('role', 'alert');
     
-    // Style
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10001;
-        padding: 12px 20px;
-        border-radius: 6px;
-        color: white;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 300px;
-        word-wrap: break-word;
+    const typeColors = {
+        success: 'bg-success',
+        error: 'bg-danger', 
+        warning: 'bg-warning',
+        info: 'bg-info'
+    };
+    
+    const typeIcons = {
+        success: 'bi-check-circle',
+        error: 'bi-exclamation-triangle',
+        warning: 'bi-exclamation-triangle',
+        info: 'bi-info-circle'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-header ${typeColors[type]} text-white">
+            <i class="bi ${typeIcons[type]} me-2"></i>
+            <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            ${message}
+        </div>
     `;
     
-    // Kolory według typu
-    const colors = {
-        success: '#198754',
-        error: '#dc3545',
-        warning: '#ffc107',
-        info: '#0dcaf0'
-    };
-    toast.style.backgroundColor = colors[type] || colors.info;
+    container.appendChild(toast);
     
-    document.body.appendChild(toast);
-    
-    // Animacja wejścia
+    // Auto remove
     setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 10);
-    
-    // Automatyczne ukrycie
-    setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
+        if (toast.parentNode) {
+            toast.remove();
+        }
     }, duration);
+    
+    // Manual close
+    toast.querySelector('.btn-close').addEventListener('click', () => {
+        toast.remove();
+    });
 }
 
 // ===============================================
-// DEBUG I DEVELOPMENT
+// DEMO FUNKCJE (TYLKO DEVELOPMENT)
 // ===============================================
 
 /**
- * Dodaj przycisk demo (tylko localhost)
+ * Dodaj demo button dla testowania (tylko development)
  */
 function addDemoButton() {
-    if (window.location.hostname === 'localhost' || 
-        window.location.hostname === '127.0.0.1') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('🛠️ Development mode - dodano demo funkcje');
         
-        console.log('Tryb deweloperski - dodano przyciski demo');
-        
-        // Demo loading button
-        const demoBtn = document.createElement('button');
-        demoBtn.innerHTML = '🔄 Test Loading';
-        demoBtn.className = 'btn btn-warning btn-sm position-fixed';
-        demoBtn.style.cssText = `
-            bottom: 20px; 
-            right: 20px; 
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        demoBtn.onclick = function() {
-            console.log('Demo loading...');
-            showLoading(this, { duration: 2000, bigLoader: true });
-        };
-        document.body.appendChild(demoBtn);
-        
-        // Demo page loading button
-        const pageBtn = document.createElement('button');
-        pageBtn.innerHTML = '📄 Page Loading';
-        pageBtn.className = 'btn btn-info btn-sm position-fixed';
-        pageBtn.style.cssText = `
-            bottom: 70px; 
-            right: 20px; 
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        pageBtn.onclick = function() {
-            showPageLoading();
-            setTimeout(hidePageLoading, 2000);
-        };
-        document.body.appendChild(pageBtn);
-        
-        // Demo toast button
-        const toastBtn = document.createElement('button');
-        toastBtn.innerHTML = '💬 Toast';
-        toastBtn.className = 'btn btn-secondary btn-sm position-fixed';
-        toastBtn.style.cssText = `
-            bottom: 120px; 
-            right: 20px; 
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        toastBtn.onclick = function() {
-            const messages = [
-                { text: 'Operacja zakończona sukcesem!', type: 'success' },
-                { text: 'Wystąpił błąd!', type: 'error' },
-                { text: 'Ostrzeżenie!', type: 'warning' },
-                { text: 'Informacja', type: 'info' }
-            ];
-            const random = messages[Math.floor(Math.random() * messages.length)];
-            showToast(random.text, random.type);
-        };
-        document.body.appendChild(toastBtn);
+        // Dodaj demo toast na Ctrl+Shift+T
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+                e.preventDefault();
+                showToast('Demo toast notification!', 'success');
+            }
+        });
     }
 }
+
+// ===============================================
+// SYSTEM INFO
+// ===============================================
 
 /**
  * Loguj informacje systemowe
  */
 function logSystemInfo() {
-    console.group('🌱 System Nasion - Dark Mode & Loading');
-    console.log('💡 Dark mode status:', localStorage.getItem('darkMode') || 'nie ustawiony');
-    console.log('📱 Viewport:', window.innerWidth + 'x' + window.innerHeight);
-    console.log('🎨 System theme:', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    console.groupCollapsed('🌱 System Informations');
+    console.log('App:', 'System Zarządzania Nasionami');
+    console.log('Version:', '1.0.0');
+    console.log('Dark Mode:', localStorage.getItem('darkMode') === 'true' ? 'ON' : 'OFF');
+    console.log('Screen:', window.screen.width + 'x' + window.screen.height);
+    console.log('Viewport:', window.innerWidth + 'x' + window.innerHeight);
+    console.log('User Agent:', navigator.userAgent);
+    console.log('Color Scheme:', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     console.log('⚡ JavaScript loaded:', new Date().toLocaleTimeString());
     console.groupEnd();
 }
@@ -550,9 +531,13 @@ function initializeApp() {
 // Inicjalizacja po załadowaniu DOM
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Loading przy nawigacji
+// Loading przy nawigacji (ale nie dla downloads)
 window.addEventListener('beforeunload', function() {
-    showPageLoading();
+    // Sprawdź czy to nie jest download
+    if (!window.location.href.includes('/export') && 
+        !window.location.href.includes('download')) {
+        showPageLoading();
+    }
 });
 
 window.addEventListener('load', function() {

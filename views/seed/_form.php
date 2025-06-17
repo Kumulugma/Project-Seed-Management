@@ -1,20 +1,27 @@
 <?php
+/**
+ * LOKALIZACJA: views/seed/_form.php
+ * POPRAWIONY FORMULARZ Z POLAMI MM-DD
+ */
 
 use yii\helpers\Html;
-use yii\bootstrap5\ActiveForm;
+use yii\widgets\ActiveForm;
 
+/* @var $this yii\web\View */
+/* @var $model app\models\Seed */
+/* @var $form yii\widgets\ActiveForm */
 ?>
 
 <div class="seed-form">
+
     <?php $form = ActiveForm::begin([
-        'options' => ['enctype' => 'multipart/form-data', 'class' => 'needs-validation', 'novalidate' => true],
-        'fieldConfig' => [
-            'template' => "{label}\n{input}\n{hint}\n{error}",
-        ],
+        'options' => ['enctype' => 'multipart/form-data'],
+        'enableAjaxValidation' => false, // Wyłącz AJAX walidację
+        'enableClientValidation' => true,
     ]); ?>
 
     <div class="row g-4">
-        <div class="col-lg-6">
+        <div class="col-lg-8">
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">
@@ -23,75 +30,48 @@ use yii\bootstrap5\ActiveForm;
                 </div>
                 <div class="card-body">
                     <?= $form->field($model, 'name')->textInput([
-                        'maxlength' => true,
-                        'placeholder' => 'np. Pomidor Malinowy Ożarowski',
+                        'maxlength' => true, 
+                        'placeholder' => 'Nazwa nasiona',
                         'class' => 'form-control',
                         'required' => true
-                    ])->label('Nazwa nasion <span class="text-danger">*</span>', ['encode' => false]) ?>
-                    
+                    ])->label('Nazwa <span class="text-danger">*</span>', ['encode' => false]) ?>
+
                     <?= $form->field($model, 'description')->textarea([
-                        'rows' => 3,
-                        'placeholder' => 'Opcjonalny opis odmiany, charakterystyka, uwagi...',
+                        'rows' => 3, 
+                        'placeholder' => 'Opis odmiany, charakterystyczne cechy...',
                         'class' => 'form-control'
                     ]) ?>
+
+                    <?= $form->field($model, 'notes')->textarea([
+                        'rows' => 2, 
+                        'placeholder' => 'Dodatkowe notatki, uwagi...',
+                        'class' => 'form-control'
+                    ]) ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-image me-2"></i>Zdjęcie opakowania
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <?php if ($model->image_path): ?>
+                        <img src="<?= $model->getImageUrl() ?>" class="img-thumbnail mb-3" style="max-width: 150px;">
+                        <br>
+                    <?php endif; ?>
                     
                     <?= $form->field($model, 'imageFile')->fileInput([
                         'accept' => 'image/*',
                         'class' => 'form-control'
-                    ])->label('Zdjęcie opakowania') ?>
+                    ])->label('Wybierz zdjęcie') ?>
                     
-                    <?php if ($model->image_path): ?>
-                        <div class="mb-3">
-                            <label class="form-label">Obecne zdjęcie:</label>
-                            <div class="mt-2">
-                                <?= Html::img($model->getImageUrl(), [
-                                    'class' => 'img-thumbnail',
-                                    'style' => 'max-width: 200px; max-height: 200px;'
-                                ]) ?>
-                                <p class="form-text mt-2">Wybierz nowe zdjęcie, aby zastąpić obecne</p>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-flower2 me-2"></i>Charakterystyka rośliny
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <?= $form->field($model, 'type')->dropDownList(
-                        $model->getTypeOptions(), 
-                        ['prompt' => 'Wybierz typ rośliny', 'class' => 'form-select', 'required' => true]
-                    )->label('Typ <span class="text-danger">*</span>', ['encode' => false]) ?>
-                    
-                    <?= $form->field($model, 'height')->dropDownList(
-                        $model->getHeightOptions(), 
-                        ['prompt' => 'Wybierz wysokość rośliny', 'class' => 'form-select', 'required' => true]
-                    )->label('Wysokość <span class="text-danger">*</span>', ['encode' => false]) ?>
-                    
-                    <?= $form->field($model, 'plant_type')->dropDownList(
-                        $model->getPlantTypeOptions(), 
-                        ['prompt' => 'Wybierz typ rośliny', 'class' => 'form-select', 'required' => true]
-                    )->label('Typ rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
-                    
-                    <div class="mb-3">
-                        <?= $form->field($model, 'priority')->textInput([
-                            'type' => 'number', 
-                            'min' => 0, 
-                            'max' => 10,
-                            'placeholder' => '0-10',
-                            'class' => 'form-control priority-input'
-                        ])->hint('0 = najniższy priorytet, 10 = najwyższy priorytet') ?>
-                        <div class="mt-2">
-                            <span class="priority-badge priority-none">0</span>
-                            <small class="text-muted ms-2">Podgląd priorytetu</small>
-                        </div>
-                    </div>
+                    <small class="text-muted">
+                        Formaty: JPG, PNG, GIF (max 2MB)
+                    </small>
                 </div>
             </div>
         </div>
@@ -100,41 +80,95 @@ use yii\bootstrap5\ActiveForm;
     <div class="row g-4 mt-2">
         <div class="col-lg-6">
             <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-sliders me-2"></i>Parametry rośliny
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?= $form->field($model, 'type')->dropDownList(
+                        $model->getTypeOptions(),
+                        [
+                            'prompt' => 'Wybierz typ...',
+                            'class' => 'form-select',
+                            'required' => true
+                        ]
+                    )->label('Typ <span class="text-danger">*</span>', ['encode' => false]) ?>
+
+                    <?= $form->field($model, 'height')->dropDownList(
+                        $model->getHeightOptions(),
+                        [
+                            'prompt' => 'Wybierz wysokość...',
+                            'class' => 'form-select',
+                            'required' => true
+                        ]
+                    )->label('Wysokość rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
+
+                    <?= $form->field($model, 'plant_type')->dropDownList(
+                        $model->getPlantTypeOptions(),
+                        [
+                            'prompt' => 'Wybierz typ rośliny...',
+                            'class' => 'form-select',
+                            'required' => true
+                        ]
+                    )->label('Typ rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
+
+                    <div class="priority-field">
+                        <?= $form->field($model, 'priority')->textInput([
+                            'type' => 'number', 
+                            'min' => 0, 
+                            'max' => 10, 
+                            'value' => $model->priority ?: 0,
+                            'class' => 'form-control',
+                            'onchange' => 'updatePriorityPreview(this.value)'
+                        ])->hint('0 = najniższy priorytet, 10 = najwyższy priorytet') ?>
+                        <div class="mt-2">
+                            <span class="priority-badge priority-none" id="priority-preview">0</span>
+                            <small class="text-muted ms-2">Podgląd priorytetu</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-calendar3 me-2"></i>Okresy i daty
                     </h5>
                 </div>
                 <div class="card-body">
-                    <?= $form->field($model, 'sowing_start')->input('date', [
+                    <?= $form->field($model, 'sowing_start')->textInput([
+                        'placeholder' => 'MM-DD (np. 03-15)',
+                        'pattern' => '(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
                         'class' => 'form-control',
-                        'required' => true
+                        'required' => true,
+                        'maxlength' => 5,
+                        'title' => 'Format: MM-DD (miesiąc-dzień, np. 03-15 dla 15 marca)'
                     ])->label('Początek wysiewu <span class="text-danger">*</span>', ['encode' => false]) ?>
                     
-                    <?= $form->field($model, 'sowing_end')->input('date', [
+                    <?= $form->field($model, 'sowing_end')->textInput([
+                        'placeholder' => 'MM-DD (np. 05-30)',
+                        'pattern' => '(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
                         'class' => 'form-control',
-                        'required' => true
+                        'required' => true,
+                        'maxlength' => 5,
+                        'title' => 'Format: MM-DD (miesiąc-dzień, np. 05-30 dla 30 maja)'
                     ])->label('Koniec wysiewu <span class="text-danger">*</span>', ['encode' => false]) ?>
                     
                     <div class="alert alert-info">
                         <small>
                             <i class="bi bi-info-circle me-1"></i>
-                            <strong>Wskazówka:</strong> Okres wysiewu może przechodzić przez nowy rok 
-                            (np. 01.12 - 28.02 dla nasion wysiewanych zimą).
+                            <strong>Format:</strong> MM-DD (miesiąc-dzień)<br>
+                            <strong>Przykłady:</strong><br>
+                            • <code>03-15</code> = 15 marca<br>
+                            • <code>05-30</code> = 30 maja<br>
+                            • <code>12-01</code> do <code>02-28</code> = grudzień-luty<br>
+                            <small class="text-muted">Okres może przechodzić przez nowy rok.</small>
                         </small>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-warning text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-box me-2"></i>Informacje o opakowaniu
-                    </h5>
-                </div>
-                <div class="card-body">
+
                     <?= $form->field($model, 'expiry_date')->input('date', [
                         'class' => 'form-control'
                     ]) ?>
@@ -171,17 +205,12 @@ use yii\bootstrap5\ActiveForm;
                         
                         <?= Html::a(
                             '<i class="bi bi-x-circle me-2"></i>Anuluj', 
-                            $model->isNewRecord ? ['index'] : ['view', 'id' => $model->id], 
-                            ['class' => 'btn btn-outline-secondary btn-lg', 'encode' => false]
+                            $model->isNewRecord ? ['/seed/index'] : ['view', 'id' => $model->id], 
+                            [
+                                'class' => 'btn btn-secondary btn-lg',
+                                'encode' => false
+                            ]
                         ) ?>
-                        
-                        <?php if (!$model->isNewRecord): ?>
-                            <?= Html::a(
-                                '<i class="bi bi-eye me-2"></i>Zobacz', 
-                                ['view', 'id' => $model->id], 
-                                ['class' => 'btn btn-info btn-lg', 'encode' => false]
-                            ) ?>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -189,99 +218,90 @@ use yii\bootstrap5\ActiveForm;
     </div>
 
     <?php ActiveForm::end(); ?>
+
 </div>
 
 <script>
+function updatePriorityPreview(value) {
+    const preview = document.getElementById('priority-preview');
+    preview.textContent = value;
+    
+    // Usuń wszystkie klasy priority
+    preview.className = 'priority-badge';
+    
+    // Dodaj odpowiednią klasę na podstawie wartości
+    if (value >= 8) {
+        preview.classList.add('priority-high');
+    } else if (value >= 5) {
+        preview.classList.add('priority-medium');
+    } else if (value > 0) {
+        preview.classList.add('priority-low');
+    } else {
+        preview.classList.add('priority-none');
+    }
+}
+
+// Inicjalizuj podgląd priorytetu przy ładowaniu strony
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-suggestions based on plant type
-    const typeSelect = document.getElementById('seed-type');
-    if (typeSelect) {
-        typeSelect.addEventListener('change', function() {
-            const type = this.value;
-            const suggestions = {
-                'vegetables': { height: 'high', plant_type: 'annual', priority: 7 },
-                'flowers': { height: 'low', plant_type: 'annual', priority: 5 },
-                'herbs': { height: 'low', plant_type: 'perennial', priority: 6 }
-            };
-            
-            if (suggestions[type] && confirm('Czy chcesz zastosować typowe ustawienia dla typu: ' + type + '?')) {
-                document.getElementById('seed-height').value = suggestions[type].height;
-                document.getElementById('seed-plant_type').value = suggestions[type].plant_type;
-                const priorityInput = document.getElementById('seed-priority');
-                priorityInput.value = suggestions[type].priority;
-                priorityInput.dispatchEvent(new Event('change'));
-            }
-        });
-    }
-    
-    // Image preview
-    const imageInput = document.getElementById('seed-imagefile');
-    if (imageInput) {
-        imageInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const existingPreview = document.getElementById('image-preview');
-                    if (existingPreview) existingPreview.remove();
-                    
-                    const preview = document.createElement('div');
-                    preview.id = 'image-preview';
-                    preview.className = 'mt-3';
-                    preview.innerHTML = `
-                        <label class="form-label">Podgląd nowego zdjęcia:</label>
-                        <div>
-                            <img src="${e.target.result}" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
-                        </div>
-                    `;
-                    imageInput.parentNode.appendChild(preview);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-    
-    // Priority badge update
-    const priorityInput = document.getElementById('seed-priority');
+    const priorityInput = document.querySelector('input[name="Seed[priority]"]');
     if (priorityInput) {
-        priorityInput.addEventListener('input', function() {
-            updatePriorityBadge(this);
-        });
-        
-        // Initial update
-        updatePriorityBadge(priorityInput);
+        updatePriorityPreview(priorityInput.value || 0);
     }
     
-    function updatePriorityBadge(input) {
-        const value = parseInt(input.value) || 0;
-        const badge = input.closest('.card-body').querySelector('.priority-badge');
+    // Dodaj walidację po stronie klienta dla dat MM-DD
+    const sowingInputs = document.querySelectorAll('input[name="Seed[sowing_start]"], input[name="Seed[sowing_end]"]');
+    sowingInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            validateMonthDayInput(this);
+        });
         
-        if (badge) {
-            badge.textContent = value;
-            badge.className = 'priority-badge';
-            
-            if (value >= 8) {
-                badge.classList.add('priority-high');
-            } else if (value >= 5) {
-                badge.classList.add('priority-medium');
-            } else if (value > 0) {
-                badge.classList.add('priority-low');
-            } else {
-                badge.classList.add('priority-none');
-            }
+        input.addEventListener('blur', function() {
+            formatMonthDayInput(this);
+        });
+    });
+});
+
+function validateMonthDayInput(input) {
+    const value = input.value;
+    const pattern = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+    
+    // Usuń poprzednie ostrzeżenia
+    const existingError = input.parentNode.querySelector('.validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    if (value && !pattern.test(value)) {
+        input.classList.add('is-invalid');
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback validation-error';
+        errorDiv.textContent = 'Format: MM-DD (np. 03-15)';
+        input.parentNode.appendChild(errorDiv);
+    } else {
+        input.classList.remove('is-invalid');
+    }
+}
+
+function formatMonthDayInput(input) {
+    let value = input.value.replace(/[^\d-]/g, ''); // Usuń wszystko oprócz cyfr i myślnika
+    
+    // Automatyczne formatowanie podczas pisania
+    if (value.length === 3 && value.indexOf('-') === -1) {
+        value = value.slice(0, 2) + '-' + value.slice(2);
+    }
+    
+    // Dodaj zera wiodące jeśli potrzeba
+    if (value.length === 5) {
+        const parts = value.split('-');
+        if (parts.length === 2) {
+            const month = parts[0].padStart(2, '0');
+            const day = parts[1].padStart(2, '0');
+            value = month + '-' + day;
         }
     }
     
-    // Form validation
-    const forms = document.querySelectorAll('.needs-validation');
-    Array.from(forms).forEach(form => {
-        form.addEventListener('submit', event => {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
-});
+    input.value = value;
+    validateMonthDayInput(input);
+}
 </script>
