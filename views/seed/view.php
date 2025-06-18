@@ -1,11 +1,4 @@
 <?php
-/**
- * LOKALIZACJA: views/seed/view.php
- */
-
-/* @var $this yii\web\View */
-/* @var $model app\models\Seed */
-/* @var $sownSeeds app\models\SownSeed[] */
 
 use yii\helpers\Html;
 use yii\widgets\DetailView;
@@ -15,270 +8,227 @@ use yii\data\ArrayDataProvider;
 $this->title = $model->name;
 $this->params['breadcrumbs'][] = ['label' => 'Nasiona', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
-
-// Sprawdź czy nasiono jest w okresie wysiewu
-$inSowingPeriod = $model->isInSowingPeriod();
-
-// Oblicz dni do/od ważności
-$expiryInfo = '';
-if ($model->expiry_date) {
-    $today = new DateTime();
-    $expiry = new DateTime($model->expiry_date);
-    $interval = $today->diff($expiry);
-    $daysLeft = $interval->invert ? -$interval->days : $interval->days;
-    
-    if ($daysLeft < 0) {
-        $expiryInfo = '<span class="label label-danger">Wygasło ' . abs($daysLeft) . ' dni temu</span>';
-    } elseif ($daysLeft == 0) {
-        $expiryInfo = '<span class="label label-danger">Wygasa dzisiaj!</span>';
-    } elseif ($daysLeft <= 30) {
-        $expiryInfo = '<span class="label label-warning">Pozostało ' . $daysLeft . ' dni</span>';
-    } elseif ($daysLeft <= 90) {
-        $expiryInfo = '<span class="label label-info">Pozostało ' . $daysLeft . ' dni</span>';
-    } else {
-        $expiryInfo = '<span class="label label-success">Ważne przez ' . $daysLeft . ' dni</span>';
-    }
-}
 ?>
 
 <div class="seed-view">
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-md-8">
-            <h1>
-                <?= Html::encode($this->title) ?>
-                <?php if ($inSowingPeriod): ?>
-                    <span class="label label-success">Okres wysiewu</span>
+            <h1 class="h2 text-primary fw-bold">
+                <i class="bi bi-info-circle me-2"></i><?= Html::encode($this->title) ?>
+                <?php if (!empty($model->company)): ?>
+                    <small class="text-muted">od <?= Html::encode($model->company) ?></small>
                 <?php endif; ?>
             </h1>
         </div>
-        <div class="col-md-4 text-right">
-            <div class="btn-group">
-                <?= Html::a('✏️ Edytuj', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-                <?= Html::a('📋 Kopiuj', ['copy', 'id' => $model->id], ['class' => 'btn btn-warning']) ?>
+        <div class="col-md-4 text-md-end">
+            <div class="btn-group" role="group">
+                <?= Html::a('<i class="bi bi-pencil me-1"></i>Edytuj', ['update', 'id' => $model->id], [
+                    'class' => 'btn btn-primary',
+                    'encode' => false
+                ]) ?>
                 
-                <?php if ($model->status === 'available'): ?>
-                    <?= Html::a('❌ Oznacz jako zużyte', ['mark-as-used', 'id' => $model->id], [
-                        'class' => 'btn btn-default',
-                        'data' => ['confirm' => 'Czy na pewno oznaczyć jako zużyte?', 'method' => 'post'],
-                    ]) ?>
-                <?php else: ?>
-                    <?= Html::a('✅ Oznacz jako dostępne', ['mark-as-available', 'id' => $model->id], [
-                        'class' => 'btn btn-success',
-                        'data' => ['method' => 'post'],
-                    ]) ?>
-                <?php endif; ?>
+                <?= Html::a('<i class="bi bi-files me-1"></i>Kopiuj', ['copy', 'id' => $model->id], [
+                    'class' => 'btn btn-info',
+                    'encode' => false
+                ]) ?>
                 
-                <?= Html::a('🗑️ Usuń', ['delete', 'id' => $model->id], [
-                    'class' => 'btn btn-danger',
-                    'data' => [
-                        'confirm' => 'Czy na pewno chcesz usunąć to nasiono? Ta operacja jest nieodwracalna.',
-                        'method' => 'post'
-                    ],
+                <?= Html::a('<i class="bi bi-arrow-left me-1"></i>Lista', ['index'], [
+                    'class' => 'btn btn-outline-secondary',
+                    'encode' => false
                 ]) ?>
             </div>
         </div>
     </div>
 
-    <!-- Alert o okresie wysiewu -->
-    <?php if ($inSowingPeriod): ?>
-        <div class="alert alert-success">
-            <h4>🌱 To nasiono jest w okresie wysiewu!</h4>
-            <p>Możesz je teraz wysiać. Okres wysiewu: 
-                <strong><?= date('d.m', strtotime($model->sowing_start)) ?> - <?= date('d.m', strtotime($model->sowing_end)) ?></strong>
-            </p>
-            <p>
-                <?= Html::a('➕ Dodaj do wysiewu', ['/dashboard/index'], ['class' => 'btn btn-success']) ?>
-            </p>
-        </div>
-    <?php endif; ?>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Szczegóły nasiona
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?= DetailView::widget([
+                        'model' => $model,
+                        'options' => ['class' => 'table table-striped detail-view'],
+                        'attributes' => [
+                            'name:text:Nazwa',
+                            [
+                                'attribute' => 'company',
+                                'label' => 'Firma/Producent',
+                                'value' => $model->company ?: 'Nie podano',
+                                'format' => 'text',
+                            ],
+                            'description:text:Opis',
+                            [
+                                'attribute' => 'type',
+                                'value' => $model->getTypeLabel(),
+                                'format' => 'html',
+                                'label' => 'Typ',
+                            ],
+                            [
+                                'attribute' => 'height',
+                                'value' => $model->getHeightLabel(),
+                                'label' => 'Wysokość rośliny',
+                            ],
+                            [
+                                'attribute' => 'plant_type',
+                                'value' => $model->getPlantTypeLabel(),
+                                'label' => 'Typ rośliny',
+                            ],
+                            [
+                                'attribute' => 'sowing_start',
+                                'value' => function($model) {
+                                    return date('d.m', strtotime('2024-' . $model->sowing_start)) . ' (' . $model->sowing_start . ')';
+                                },
+                                'label' => 'Początek wysiewu',
+                            ],
+                            [
+                                'attribute' => 'sowing_end',
+                                'value' => function($model) {
+                                    return date('d.m', strtotime('2024-' . $model->sowing_end)) . ' (' . $model->sowing_end . ')';
+                                },
+                                'label' => 'Koniec wysiewu',
+                            ],
+                            [
+                                'attribute' => 'priority',
+                                'value' => function($model) {
+                                    $class = 'priority-' . $model->getPriorityClass();
+                                    return '<span class="priority-badge ' . $class . '">' . $model->priority . '</span>';
+                                },
+                                'format' => 'html',
+                                'label' => 'Priorytet',
+                            ],
+                            [
+                                'attribute' => 'status',
+                                'value' => function($model) {
+                                    $class = $model->status === 'available' ? 'success' : 'secondary';
+                                    return '<span class="badge bg-' . $class . '">' . $model->getStatusLabel() . '</span>';
+                                },
+                                'format' => 'html',
+                                'label' => 'Status',
+                            ],
+                            'expiry_date:date:Data ważności',
+                            'purchase_year:text:Rok zakupu',
+                            'notes:ntext:Notatki',
+                            'created_at:datetime:Data utworzenia',
+                            'updated_at:datetime:Data aktualizacji',
+                        ],
+                    ]) ?>
+                </div>
+            </div>
 
-    <!-- Alert o ważności -->
-    <?php if ($expiryInfo && (strpos($expiryInfo, 'danger') !== false || strpos($expiryInfo, 'warning') !== false)): ?>
-        <div class="alert alert-<?= strpos($expiryInfo, 'danger') !== false ? 'danger' : 'warning' ?>">
-            <h4>⚠️ Uwaga na datę ważności!</h4>
-            <p><?= $expiryInfo ?></p>
+            <!-- Akcje szybkie -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning me-2"></i>Szybkie akcje
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <?php if ($model->status === \app\models\Seed::STATUS_AVAILABLE): ?>
+                                <?= Html::a(
+                                    '<i class="bi bi-check-circle me-2"></i>Oznacz jako zużyte', 
+                                    ['mark-as-used', 'id' => $model->id], 
+                                    [
+                                        'class' => 'btn btn-warning w-100',
+                                        'data-confirm' => 'Czy na pewno chcesz oznaczyć to nasiono jako zużyte?',
+                                        'data-method' => 'post',
+                                        'encode' => false
+                                    ]
+                                ) ?>
+                            <?php else: ?>
+                                <?= Html::a(
+                                    '<i class="bi bi-arrow-clockwise me-2"></i>Przywróć jako dostępne', 
+                                    ['mark-as-available', 'id' => $model->id], 
+                                    [
+                                        'class' => 'btn btn-success w-100',
+                                        'data-confirm' => 'Czy na pewno chcesz przywrócić to nasiono jako dostępne?',
+                                        'data-method' => 'post',
+                                        'encode' => false
+                                    ]
+                                ) ?>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-md-6">
+                            <?= Html::a(
+                                '<i class="bi bi-trash me-2"></i>Usuń nasiono', 
+                                ['delete', 'id' => $model->id], 
+                                [
+                                    'class' => 'btn btn-danger w-100',
+                                    'data-confirm' => 'Czy na pewno chcesz usunąć to nasiono? Ta operacja jest nieodwracalna.',
+                                    'data-method' => 'post',
+                                    'encode' => false
+                                ]
+                            ) ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    <?php endif; ?>
 
-    <div class="row">
-        <div class="col-md-8">
-            <!-- Szczegóły nasiona -->
-            <?= DetailView::widget([
-                'model' => $model,
-                'options' => ['class' => 'table table-striped table-bordered detail-view'],
-                'attributes' => [
-                    'id',
-                    [
-                        'attribute' => 'name',
-                        'format' => 'html',
-                        'value' => '<strong>' . Html::encode($model->name) . '</strong>',
-                    ],
-                    [
-                        'attribute' => 'description',
-                        'format' => 'ntext',
-                        'visible' => !empty($model->description),
-                    ],
-                    [
-                        'attribute' => 'type',
-                        'format' => 'html',
-                        'value' => function($model) {
-                            $colors = ['vegetables' => 'success', 'flowers' => 'primary', 'herbs' => 'info'];
-                            $color = $colors[$model->type] ?? 'default';
-                            return '<span class="label label-' . $color . '">' . $model->getTypeLabel() . '</span>';
-                        },
-                    ],
-                    [
-                        'attribute' => 'height',
-                        'format' => 'html',
-                        'value' => function($model) {
-                            $color = $model->height === 'high' ? 'primary' : 'default';
-                            return '<span class="label label-' . $color . '">' . $model->getHeightLabel() . '</span>';
-                        },
-                    ],
-                    [
-                        'attribute' => 'plant_type',
-                        'format' => 'html',
-                        'value' => function($model) {
-                            $color = $model->plant_type === 'perennial' ? 'success' : 'warning';
-                            return '<span class="label label-' . $color . '">' . $model->getPlantTypeLabel() . '</span>';
-                        },
-                    ],
-                    [
-    'attribute' => 'sowing_start',
-    'format' => 'html',
-    'label' => 'Początek wysiewu',
-    'value' => function($model) {
-        return $model->getFormattedSowingDate('sowing_start') . ' <small class="text-muted">(' . $model->sowing_start . ')</small>';
-    },
-],
-[
-    'attribute' => 'sowing_end',
-    'format' => 'html',
-    'label' => 'Koniec wysiewu',
-    'value' => function($model) {
-        return $model->getFormattedSowingDate('sowing_end') . ' <small class="text-muted">(' . $model->sowing_end . ')</small>';
-    },
-],
-[
-    'label' => 'Okres wysiewu',
-    'format' => 'html',
-    'value' => function($model) use ($inSowingPeriod) {
-        $start = $model->getFormattedSowingDate('sowing_start');
-        $end = $model->getFormattedSowingDate('sowing_end');
-        $result = $start . ' - ' . $end;
-        
-        if ($inSowingPeriod) {
-            $result .= ' <span class="badge bg-success ms-2">Aktualny okres</span>';
-        }
-        
-        return $result;
-    },
-],
-                    [
-                        'attribute' => 'expiry_date',
-                        'format' => 'html',
-                        'value' => $model->expiry_date ? 
-                                  date('d.m.Y', strtotime($model->expiry_date)) . ' ' . $expiryInfo : 
-                                  '<span class="text-muted">Brak daty</span>',
-                    ],
-                    [
-                        'attribute' => 'purchase_year',
-                        'visible' => !empty($model->purchase_year),
-                    ],
-                    [
-                        'attribute' => 'priority',
-                        'format' => 'html',
-                        'value' => function($model) {
-                            $color = 'default';
-                            if ($model->priority >= 8) $color = 'danger';
-                            elseif ($model->priority >= 5) $color = 'warning';
-                            elseif ($model->priority > 0) $color = 'info';
-                            
-                            return '<span class="badge" style="background-color: ' . 
-                                   ($color === 'danger' ? '#d9534f' : 
-                                    ($color === 'warning' ? '#f0ad4e' : 
-                                     ($color === 'info' ? '#5bc0de' : '#777'))) . '">' . 
-                                   $model->priority . '</span>';
-                        },
-                    ],
-                    [
-                        'attribute' => 'status',
-                        'format' => 'html',
-                        'value' => function($model) {
-                            $color = $model->status === 'available' ? 'success' : 'default';
-                            return '<span class="label label-' . $color . '">' . $model->getStatusLabel() . '</span>';
-                        },
-                    ],
-                    [
-                        'attribute' => 'created_at',
-                        'format' => 'datetime',
-                        'label' => 'Data dodania',
-                    ],
-                    [
-                        'attribute' => 'updated_at',
-                        'format' => 'datetime',
-                        'label' => 'Ostatnia aktualizacja',
-                    ],
-                ],
-            ]) ?>
-        </div>
-        
-        <div class="col-md-4">
-            <!-- Zdjęcie nasiona -->
-            <?php if ($model->image_path): ?>
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">📷 Zdjęcie opakowania</h4>
-                    </div>
-                    <div class="panel-body text-center">
-                        <?= Html::img($model->getImageUrl(), [
-                            'class' => 'img-responsive',
-                            'style' => 'max-width: 100%; border-radius: 8px; cursor: pointer;',
-                            'onclick' => 'openImageModal(this.src)'
-                        ]) ?>
-                    </div>
+        <div class="col-lg-4">
+            <!-- Zdjęcie -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-image me-2"></i>Zdjęcie opakowania
+                    </h5>
                 </div>
-            <?php else: ?>
-                <div class="panel panel-default">
-                    <div class="panel-body text-center text-muted">
-                        <i class="glyphicon glyphicon-camera" style="font-size: 48px;"></i>
-                        <p>Brak zdjęcia opakowania</p>
-                        <?= Html::a('➕ Dodaj zdjęcie', ['update', 'id' => $model->id], ['class' => 'btn btn-sm btn-primary']) ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
-            <!-- Szybkie akcje -->
-            <div class="panel panel-info">
-                <div class="panel-heading">
-                    <h4 class="panel-title">⚡ Szybkie akcje</h4>
-                </div>
-                <div class="panel-body">
-                    <?php if ($inSowingPeriod && $model->status === 'available'): ?>
-                        <p>
-                            <?= Html::a('🌱 Wysiaj teraz', ['/dashboard/index'], [
-                                'class' => 'btn btn-success btn-block'
-                            ]) ?>
-                        </p>
+                <div class="card-body text-center">
+                    <?php if ($model->image_path && file_exists(Yii::getAlias('@webroot') . '/uploads/' . $model->image_path)): ?>
+                        <img src="/uploads/<?= Html::encode($model->image_path) ?>" 
+                             class="img-fluid rounded" 
+                             style="max-height: 300px; width: auto;"
+                             alt="<?= Html::encode($model->name) ?>">
+                    <?php else: ?>
+                        <div class="text-muted py-5">
+                            <i class="bi bi-image" style="font-size: 3rem;"></i>
+                            <p class="mt-2">Brak zdjęcia</p>
+                        </div>
                     <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Status wysiewu -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar-check me-2"></i>Status wysiewu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?php 
+                    $isInSeason = $model->isInSowingPeriod();
+                    $currentDate = date('m-d');
+                    ?>
                     
-                    <p>
-                        <?= Html::a('📋 Utwórz kopię', ['copy', 'id' => $model->id], [
-                            'class' => 'btn btn-warning btn-block'
-                        ]) ?>
-                    </p>
-                    
-                    <p>
-                        <?= Html::a('📊 Zobacz statystyki', ['/seed/stats'], [
-                            'class' => 'btn btn-info btn-block'
-                        ]) ?>
-                    </p>
-                    
-                    <p>
-                        <?= Html::a('🔙 Powrót do listy', ['index'], [
-                            'class' => 'btn btn-default btn-block'
-                        ]) ?>
-                    </p>
+                    <?php if ($isInSeason): ?>
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <strong>Aktualny okres wysiewu!</strong><br>
+                            Możesz wysiewać to nasiono teraz.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Poza okresem wysiewu</strong><br>
+                            Okres: <?= date('d.m', strtotime('2024-' . $model->sowing_start)) ?> - 
+                            <?= date('d.m', strtotime('2024-' . $model->sowing_end)) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <strong>Dziś:</strong> <?= date('d.m') ?><br>
+                            <strong>Okres wysiewu:</strong> 
+                            <?= date('d.m', strtotime('2024-' . $model->sowing_start)) ?> - 
+                            <?= date('d.m', strtotime('2024-' . $model->sowing_end)) ?>
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -286,11 +236,13 @@ if ($model->expiry_date) {
 
     <!-- Historia wysiewów -->
     <?php if (!empty($sownSeeds)): ?>
-        <div class="panel panel-primary">
-            <div class="panel-heading">
-                <h3 class="panel-title">📈 Historia wysiewów (<?= count($sownSeeds) ?>)</h3>
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Historia wysiewów (<?= count($sownSeeds) ?>)
+                </h5>
             </div>
-            <div class="panel-body">
+            <div class="card-body">
                 <?php
                 $sownDataProvider = new ArrayDataProvider([
                     'allModels' => $sownSeeds,
@@ -305,7 +257,7 @@ if ($model->expiry_date) {
                 <?= GridView::widget([
                     'dataProvider' => $sownDataProvider,
                     'layout' => "{items}\n{pager}",
-                    'tableOptions' => ['class' => 'table table-striped table-condensed'],
+                    'tableOptions' => ['class' => 'table table-striped'],
                     'columns' => [
                         [
                             'attribute' => 'sown_date',
@@ -324,100 +276,56 @@ if ($model->expiry_date) {
                             'attribute' => 'status',
                             'format' => 'html',
                             'value' => function($model) {
-                                $color = $model->getStatusColor();
-                                return '<span class="label label-' . $color . '">' . $model->getStatusLabel() . '</span>';
+                                $statusOptions = [
+                                    'sown' => ['label' => 'Wysiany', 'class' => 'secondary'],
+                                    'germinated' => ['label' => 'Wykiełkował', 'class' => 'success'],
+                                    'failed' => ['label' => 'Nie wykiełkował', 'class' => 'danger'],
+                                ];
+                                
+                                $status = $statusOptions[$model->status] ?? ['label' => $model->status, 'class' => 'secondary'];
+                                return '<span class="badge bg-' . $status['class'] . '">' . $status['label'] . '</span>';
                             },
                             'label' => 'Status',
                         ],
                         [
-                            'label' => 'Dni od wysiewu',
-                            'value' => function($model) {
-                                return $model->getDaysFromSowing();
-                            },
-                        ],
-                        [
                             'attribute' => 'notes',
-                            'format' => 'ntext',
+                            'value' => function($model) {
+                                return $model->notes ? Html::encode(mb_substr($model->notes, 0, 100)) . (mb_strlen($model->notes) > 100 ? '...' : '') : '-';
+                            },
                             'label' => 'Notatki',
                         ],
                         [
                             'class' => 'yii\grid\ActionColumn',
-                            'template' => '{note} {delete}',
+                            'template' => '{note}',
                             'buttons' => [
-                                'note' => function ($url, $model) {
-                                    return Html::a('📝', ['/dashboard/add-note', 'id' => $model->id], [
+                                'note' => function ($url, $model, $key) {
+                                    return Html::a('<i class="bi bi-pencil-square"></i>', ['/dashboard/add-note', 'id' => $model->id], [
+                                        'class' => 'btn btn-outline-primary btn-sm',
                                         'title' => 'Dodaj notatkę',
-                                        'class' => 'btn btn-xs btn-info'
-                                    ]);
-                                },
-                                'delete' => function ($url, $model) {
-                                    return Html::a('🗑️', ['/dashboard/delete-sown', 'id' => $model->id], [
-                                        'title' => 'Usuń wysiew',
-                                        'class' => 'btn btn-xs btn-danger',
-                                        'data' => [
-                                            'confirm' => 'Czy na pewno usunąć ten zapis wysiewu?',
-                                            'method' => 'post'
-                                        ]
+                                        'encode' => false
                                     ]);
                                 },
                             ],
-                            'urlCreator' => function ($action, $model, $key, $index) {
-                                return ['dashboard/' . $action, 'id' => $model->id];
-                            }
+                            'label' => 'Akcje',
                         ],
                     ],
-                ]); ?>
-                
-                <!-- Statystyki kiełkowania dla tego nasiona -->
-                <?php 
-                $stats = \app\models\SownSeed::getGerminationStats($model->id);
-                if ($stats['total'] > 0):
-                ?>
-                    <div class="row" style="margin-top: 15px;">
-                        <div class="col-md-12">
-                            <div class="alert alert-info">
-                                <strong>📊 Statystyki kiełkowania dla tego nasiona:</strong>
-                                <ul class="list-inline" style="margin: 5px 0 0 0;">
-                                    <li>Łącznie: <strong><?= $stats['total'] ?></strong></li>
-                                    <li>Wykiełkowało: <strong class="text-success"><?= $stats['germinated'] ?></strong></li>
-                                    <li>Nie wykiełkowało: <strong class="text-danger"><?= $stats['not_germinated'] ?></strong></li>
-                                    <li>Wskaźnik kiełkowania: <strong><?= $stats['germination_rate'] ?>%</strong></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                ]) ?>
             </div>
-        </div>
-    <?php else: ?>
-        <div class="alert alert-info">
-            <h4>📝 Historia wysiewów</h4>
-            <p>To nasiono nie było jeszcze wysiewane. Gdy dodasz je do wysiewu, tutaj pojawi się historia.</p>
-            <?php if ($inSowingPeriod): ?>
-                <p><?= Html::a('🌱 Wysiaj teraz', ['/dashboard/index'], ['class' => 'btn btn-success']) ?></p>
-            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
 
-<!-- Modal do podglądu zdjęcia -->
-<div class="modal fade" id="imageModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Zdjęcie opakowania - <?= Html::encode($model->name) ?></h4>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" class="img-responsive" style="max-width: 100%;">
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function openImageModal(imageSrc) {
-    $('#modalImage').attr('src', imageSrc);
-    $('#imageModal').modal('show');
+<style>
+.priority-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    color: white;
+    font-size: 0.75rem;
 }
-</script>
+
+.priority-high { background-color: #dc3545; }
+.priority-medium { background-color: #fd7e14; }
+.priority-low { background-color: #198754; }
+.priority-none { background-color: #6c757d; }
+</style>

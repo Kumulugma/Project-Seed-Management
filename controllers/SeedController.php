@@ -1,6 +1,7 @@
 <?php
 /**
  * LOKALIZACJA: controllers/SeedController.php
+ * POPRAWIONY KONTROLER Z OBSŁUGĄ COMPANY
  */
 
 namespace app\controllers;
@@ -49,7 +50,8 @@ class SeedController extends Controller
         if (Yii::$app->request->get('search')) {
             $searchTerm = Yii::$app->request->get('search');
             $query->where(['like', 'name', $searchTerm])
-                  ->orWhere(['like', 'description', $searchTerm]);
+                  ->orWhere(['like', 'description', $searchTerm])
+                  ->orWhere(['like', 'company', $searchTerm]); // DODANO WYSZUKIWANIE PO FIRMIE
         }
         
         // Obsługa filtrowania
@@ -175,6 +177,7 @@ class SeedController extends Controller
         $seeds = Seed::find()
             ->where(['like', 'name', $query])
             ->orWhere(['like', 'description', $query])
+            ->orWhere(['like', 'company', $query]) // DODANO WYSZUKIWANIE PO FIRMIE
             ->limit(10)
             ->all();
         
@@ -183,11 +186,12 @@ class SeedController extends Controller
             $results[] = [
                 'id' => $seed->id,
                 'name' => $seed->name,
+                'company' => $seed->company, // DODANO FIRMĘ
                 'type' => $seed->getTypeLabel(),
                 'status' => $seed->getStatusLabel(),
                 'height' => $seed->getHeightLabel(),
                 'plant_type' => $seed->getPlantTypeLabel(),
-                'sowing_period' => date('d.m', strtotime($seed->sowing_start)) . ' - ' . date('d.m', strtotime($seed->sowing_end)),
+                'sowing_period' => date('d.m', strtotime('2024-' . $seed->sowing_start)) . ' - ' . date('d.m', strtotime('2024-' . $seed->sowing_end)),
                 'priority' => $seed->priority,
                 'url' => \yii\helpers\Url::to(['view', 'id' => $seed->id]),
             ];
@@ -272,13 +276,14 @@ class SeedController extends Controller
         
         $output = fopen('php://output', 'w');
         
-        // BOM dla poprawnego wyświetlania polskich znaków w Excelu
+        // Dodaj BOM dla UTF-8
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
         
-        // Nagłówki
+        // Nagłówki CSV (z dodaną firmą)
         fputcsv($output, [
             'ID',
             'Nazwa',
+            'Firma/Producent',
             'Opis',
             'Typ',
             'Wysokość',
@@ -296,12 +301,13 @@ class SeedController extends Controller
             fputcsv($output, [
                 $seed->id,
                 $seed->name,
+                $seed->company, // DODANO FIRMĘ
                 $seed->description,
                 $seed->getTypeLabel(),
                 $seed->getHeightLabel(),
                 $seed->getPlantTypeLabel(),
                 $seed->getFormattedSowingDate('sowing_start') ?: $seed->sowing_start,
-$seed->getFormattedSowingDate('sowing_end') ?: $seed->sowing_end,
+                $seed->getFormattedSowingDate('sowing_end') ?: $seed->sowing_end,
                 $seed->expiry_date,
                 $seed->purchase_year,
                 $seed->getStatusLabel(),
@@ -325,6 +331,7 @@ $seed->getFormattedSowingDate('sowing_end') ?: $seed->sowing_end,
             'by_type' => [],
             'by_height' => [],
             'by_plant_type' => [],
+            'by_company' => [], // DODANO STATYSTYKI PO FIRMACH
             'expiring_soon' => [],
         ];
         
@@ -344,6 +351,19 @@ $seed->getFormattedSowingDate('sowing_end') ?: $seed->sowing_end,
         $plantTypeOptions = (new Seed())->getPlantTypeOptions();
         foreach ($plantTypeOptions as $key => $label) {
             $stats['by_plant_type'][$label] = Seed::find()->where(['plant_type' => $key])->count();
+        }
+        
+        // DODANO: Statystyki według firm
+        $companies = Seed::find()
+            ->select('company')
+            ->where(['not', ['company' => null]])
+            ->andWhere(['not', ['company' => '']])
+            ->groupBy('company')
+            ->orderBy(['company' => SORT_ASC])
+            ->column();
+            
+        foreach ($companies as $company) {
+            $stats['by_company'][$company] = Seed::find()->where(['company' => $company])->count();
         }
         
         // Nasiona wygasające w ciągu 6 miesięcy

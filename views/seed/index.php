@@ -39,208 +39,159 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 
+    <!-- Filtry i wyszukiwanie -->
     <div class="card mb-4">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-funnel me-2"></i>Filtry i wyszukiwanie
-            </h5>
-        </div>
         <div class="card-body">
-            <?= Html::beginForm(['index'], 'get', ['class' => 'row g-3', 'id' => 'search-form']) ?>
-
+            <?= Html::beginForm(['index'], 'get', ['class' => 'row g-3']) ?>
+            
             <div class="col-lg-4 col-md-6">
                 <label class="form-label">Szukaj</label>
-                <?=
-                Html::textInput('search', Yii::$app->request->get('search'), [
+                <?= Html::textInput('search', Yii::$app->request->get('search'), [
                     'class' => 'form-control',
-                    'placeholder' => 'Nazwa lub opis nasion...',
-                    'id' => 'search-input'
-                ])
-                ?>
+                    'placeholder' => 'Nazwa, opis, producent...'
+                ]) ?>
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-3">
                 <label class="form-label">Typ</label>
-                <?=
-                Html::dropDownList('type', Yii::$app->request->get('type'),
-                        array_merge(['' => 'Wszystkie typy'], $searchModel->getTypeOptions()),
-                        ['class' => 'form-select']
-                )
-                ?>
+                <?= Html::dropDownList('type', Yii::$app->request->get('type'), 
+                    array_merge(['' => 'Wszystkie'], (new Seed())->getTypeOptions()), 
+                    ['class' => 'form-select']
+                ) ?>
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-3">
                 <label class="form-label">Status</label>
-<?=
-Html::dropDownList('status', Yii::$app->request->get('status'),
-        array_merge(['' => 'Wszystkie statusy'], $searchModel->getStatusOptions()),
-        ['class' => 'form-select']
-)
-?>
+                <?= Html::dropDownList('status', Yii::$app->request->get('status'), 
+                    array_merge(['' => 'Wszystkie'], (new Seed())->getStatusOptions()), 
+                    ['class' => 'form-select']
+                ) ?>
             </div>
 
             <div class="col-lg-2 col-md-6">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-grid">
-            <?=
-            Html::submitButton('<i class="bi bi-search me-1"></i>Szukaj', [
-                'class' => 'btn btn-primary',
-                'encode' => false
-            ])
-            ?>
+                    <?= Html::submitButton('<i class="bi bi-search me-1"></i>Szukaj', [
+                        'class' => 'btn btn-primary',
+                        'encode' => false
+                    ]) ?>
                 </div>
             </div>
 
             <?php if (Yii::$app->request->get('search') || Yii::$app->request->get('type') || Yii::$app->request->get('status')): ?>
                 <div class="col-12">
-    <?=
-    Html::a('<i class="bi bi-x-circle me-1"></i>Wyczyść filtry', ['index'], [
-        'class' => 'btn btn-outline-secondary',
-        'encode' => false
-    ])
-    ?>
+                    <?= Html::a('<i class="bi bi-x-circle me-1"></i>Wyczyść filtry', ['index'], [
+                        'class' => 'btn btn-outline-secondary',
+                        'encode' => false
+                    ]) ?>
                 </div>
-                <?php endif; ?>
+            <?php endif; ?>
 
-<?= Html::endForm() ?>
+            <?= Html::endForm() ?>
         </div>
     </div>
 
     <div class="card">
         <div class="card-body">
-                                    <?php if ($dataProvider->totalCount > 0): ?>
-                <div class="row g-3" id="seeds-grid">
-    <?php foreach ($dataProvider->models as $model): ?>
-                        <div class="col-xl-4 col-lg-6 col-md-6">
+            <?php if ($dataProvider->totalCount > 0): ?>
+                <!-- 5 kolumn z mniejszymi marginesami -->
+                <div class="row g-2" id="seeds-grid">
+                    <?php foreach ($dataProvider->models as $model): ?>
+                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                             <div class="card h-100 seed-card">
                                 <div class="card-header d-flex justify-content-between align-items-center p-2">
                                     <div class="d-flex align-items-center">
-                                        <span class="badge bg-<?= $model->type === 'vegetables' ? 'success' : ($model->type === 'flowers' ? 'primary' : 'info') ?> me-2">
-                                <?= $model->getTypeLabel() ?>
+                                        <span class="badge bg-<?= $model->type === 'vegetables' ? 'success' : ($model->type === 'flowers' ? 'primary' : 'info') ?> me-1 small">
+                                            <?= $model->getTypeLabel() ?>
                                         </span>
                                         <span class="priority-badge priority-<?= $model->priority >= 8 ? 'high' : ($model->priority >= 5 ? 'medium' : ($model->priority > 0 ? 'low' : 'none')) ?> small">
-                                    <?= $model->priority ?>
+                                            <?= $model->priority ?>
                                         </span>
                                     </div>
-                                    <span class="badge bg-<?= $model->status === 'available' ? 'success' : 'secondary' ?>">
-                                <?= $model->getStatusLabel() ?>
+                                    <span class="badge bg-<?= $model->status === 'available' ? 'success' : 'secondary' ?> small">
+                                        <?= $model->getStatusLabel() ?>
                                     </span>
                                 </div>
+                                
+                                <div class="card-body p-2">
+                                    <?php if ($model->image_path && file_exists(Yii::getAlias('@webroot') . '/uploads/' . $model->image_path)): ?>
+                                        <div class="text-center mb-2">
+                                            <img src="/uploads/<?= Html::encode($model->image_path) ?>" 
+                                                 class="img-thumbnail" 
+                                                 style="max-height: 80px; max-width: 100%; object-fit: cover;"
+                                                 alt="<?= Html::encode($model->name) ?>">
+                                        </div>
+                                    <?php endif; ?>
 
-                                <?php if ($model->image_path): ?>
-                                    <div class="card-img-container" style="height: 150px; overflow: hidden;">
-            <?=
-            Html::img($model->getImageUrl(), [
-                'class' => 'card-img-top object-fit-cover',
-                'style' => 'height: 100%; width: 100%;'
-            ])
-            ?>
-                                    </div>
-                                        <?php else: ?>
-                                    <div class="card-img-container bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
-                                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
-                                    </div>
-        <?php endif; ?>
-
-                                <div class="card-body p-3">
-                                    <h6 class="card-title fw-bold mb-2"><?= Html::encode($model->name) ?></h6>
-
-        <?php if ($model->description): ?>
-                                        <p class="card-text text-muted small mb-2">
-            <?= Html::encode(substr($model->description, 0, 80)) ?>
-            <?= strlen($model->description) > 80 ? '...' : '' ?>
+                                    <h6 class="card-title mb-1 small fw-bold">
+                                        <?= Html::encode($model->name) ?>
+                                    </h6>
+                                    
+                                    <!-- Nazwa firmy/producenta -->
+                                    <?php if (!empty($model->company)): ?>
+                                        <p class="card-text small text-muted mb-1">
+                                            <i class="bi bi-building me-1"></i><?= Html::encode($model->company) ?>
                                         </p>
-                                                <?php endif; ?>
+                                    <?php endif; ?>
 
-                                    <div class="row g-2 mb-2">
-                                        <div class="col-6">
-                                            <small class="text-muted">Wysokość:</small><br>
-                                            <span class="badge bg-<?= $model->height === 'high' ? 'warning' : 'secondary' ?> small">
-        <?= $model->getHeightLabel() ?>
-                                            </span>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">Typ rośliny:</small><br>
-                                            <span class="badge bg-<?= $model->plant_type === 'perennial' ? 'success' : 'warning' ?> small">
-                                        <?= $model->getPlantTypeLabel() ?>
-                                            </span>
-                                        </div>
+                                    <div class="d-flex justify-content-between align-items-center small text-muted mb-2">
+                                        <span>
+                                            <i class="bi bi-calendar3 me-1"></i>
+                                            <?= date('d.m', strtotime('2024-' . $model->sowing_start)) ?> - 
+                                            <?= date('d.m', strtotime('2024-' . $model->sowing_end)) ?>
+                                        </span>
+                                        <span class="badge bg-light text-dark">
+                                            <?= $model->getHeightLabel() ?>
+                                        </span>
                                     </div>
 
-                                    <div class="mb-2">
-                                        <small class="text-muted">Okres wysiewu:</small><br>
-                                        <span class="small">
-<?= $model->getFormattedSowingDate('sowing_start') ?> - 
-<?= $model->getFormattedSowingDate('sowing_end') ?>
-</span>
-                                        <?php if ($model->isInSowingPeriod()): ?>
-                                            <span class="badge bg-success ms-1 small">Aktualny okres</span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                        <?php if ($model->expiry_date): ?>
-                                        <div class="mb-3">
-                                            <small class="text-muted">Data ważności:</small><br>
-                                            <?php
-                                            $today = new DateTime();
-                                            $expiry = new DateTime($model->expiry_date);
-                                            $interval = $today->diff($expiry);
-                                            $daysLeft = $interval->invert ? -$interval->days : $interval->days;
-                                            ?>
-                                            <span class="small"><?= date('d.m.Y', strtotime($model->expiry_date)) ?></span>
-                                            <?php if ($daysLeft < 0): ?>
-                                                <span class="badge bg-danger ms-1 small">Wygasło</span>
-                                            <?php elseif ($daysLeft <= 30): ?>
-                                                <span class="badge bg-warning ms-1 small"><?= $daysLeft ?> dni</span>
-                                            <?php elseif ($daysLeft <= 90): ?>
-                                                <span class="badge bg-info ms-1 small"><?= $daysLeft ?> dni</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <?php endif; ?>
+                                    <?php if ($model->description): ?>
+                                        <p class="card-text small">
+                                            <?= Html::encode(mb_substr($model->description, 0, 60)) ?><?= mb_strlen($model->description) > 60 ? '...' : '' ?>
+                                        </p>
+                                    <?php endif; ?>
                                 </div>
 
-                                <div class="card-footer bg-light p-2">
+                                <div class="card-footer p-2 bg-transparent">
                                     <div class="btn-group w-100" role="group">
-                                        <?=
-                                        Html::a('<i class="bi bi-eye"></i>', ['view', 'id' => $model->id], [
-                                            'class' => 'btn btn-outline-info btn-sm',
-                                            'title' => 'Zobacz',
+                                        <?= Html::a('<i class="bi bi-eye"></i>', ['view', 'id' => $model->id], [
+                                            'class' => 'btn btn-outline-primary btn-sm flex-fill',
+                                            'title' => 'Zobacz szczegóły',
                                             'encode' => false
-                                        ])
-                                        ?>
-                                        <?=
-                                        Html::a('<i class="bi bi-pencil"></i>', ['update', 'id' => $model->id], [
-                                            'class' => 'btn btn-outline-primary btn-sm',
+                                        ]) ?>
+                                        
+                                        <?= Html::a('<i class="bi bi-pencil"></i>', ['update', 'id' => $model->id], [
+                                            'class' => 'btn btn-outline-secondary btn-sm flex-fill',
                                             'title' => 'Edytuj',
                                             'encode' => false
-                                        ])
-                                        ?>
-                        <?=
-                        Html::a('<i class="bi bi-copy"></i>', ['copy', 'id' => $model->id], [
-                            'class' => 'btn btn-outline-warning btn-sm',
-                            'title' => 'Kopiuj',
-                            'encode' => false
-                        ])
-                        ?>
-                        <?=
-                        Html::a('<i class="bi bi-trash"></i>', ['delete', 'id' => $model->id], [
-                            'class' => 'btn btn-outline-danger btn-sm',
-                            'title' => 'Usuń',
-                            'data-confirm' => 'Czy na pewno chcesz usunąć te nasiona?',
-                            'data-method' => 'post',
-                            'encode' => false
-                        ])
-                        ?>
+                                        ]) ?>
+                                        
+                                        <?php if ($model->status === Seed::STATUS_AVAILABLE): ?>
+                                            <?= Html::a('<i class="bi bi-check-circle"></i>', ['mark-as-used', 'id' => $model->id], [
+                                                'class' => 'btn btn-outline-warning btn-sm flex-fill',
+                                                'title' => 'Oznacz jako zużyte',
+                                                'data-confirm' => 'Czy na pewno chcesz oznaczyć to nasiono jako zużyte?',
+                                                'data-method' => 'post',
+                                                'encode' => false
+                                            ]) ?>
+                                        <?php else: ?>
+                                            <?= Html::a('<i class="bi bi-arrow-clockwise"></i>', ['mark-as-available', 'id' => $model->id], [
+                                                'class' => 'btn btn-outline-success btn-sm flex-fill',
+                                                'title' => 'Oznacz jako dostępne',
+                                                'data-confirm' => 'Czy na pewno chcesz przywrócić to nasiono jako dostępne?',
+                                                'data-method' => 'post',
+                                                'encode' => false
+                                            ]) ?>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
-    <?php endforeach; ?>
+                    <?php endforeach; ?>
                 </div>
 
                 <div class="d-flex justify-content-center mt-4">
-                    <?=
-                    LinkPager::widget([
+                    <?= LinkPager::widget([
                         'pagination' => $dataProvider->pagination,
                         'options' => ['class' => 'pagination'],
                         'linkOptions' => ['class' => 'page-link'],
@@ -251,122 +202,133 @@ Html::dropDownList('status', Yii::$app->request->get('status'),
                         'lastPageCssClass' => 'page-item',
                         'disabledPageCssClass' => 'page-item disabled',
                         'activePageCssClass' => 'page-item active',
-                    ]);
-                    ?>
+                    ]); ?>
                 </div>
-<?php else: ?>
+            <?php else: ?>
                 <div class="text-center py-5">
                     <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
                     <h4 class="mt-3">Brak nasion</h4>
                     <p class="text-muted">Nie znaleziono nasion spełniających kryteria wyszukiwania.</p>
-    <?=
-    Html::a('<i class="bi bi-plus-circle me-2"></i>Dodaj pierwsze nasiona', ['create'], [
-        'class' => 'btn btn-success btn-lg',
-        'encode' => false
-    ])
-    ?>
+                    <?= Html::a('<i class="bi bi-plus-circle me-2"></i>Dodaj pierwsze nasiona', ['create'], [
+                        'class' => 'btn btn-success btn-lg',
+                        'encode' => false
+                    ]) ?>
                 </div>
-<?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 
     <div class="row mt-4 g-3">
         <div class="col-lg-3 col-md-6">
-            <div class="card text-center border-primary">
-                <div class="card-body">
+            <div class="card bg-primary bg-opacity-10 border-primary">
+                <div class="card-body text-center">
                     <i class="bi bi-collection text-primary display-6"></i>
-                    <h4 class="text-primary mt-2"><?= $dataProvider->totalCount ?></h4>
+                    <h4 class="text-primary"><?= $dataProvider->totalCount ?></h4>
                     <p class="text-muted mb-0">Łącznie nasion</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card text-center border-success">
-                <div class="card-body">
+            <div class="card bg-success bg-opacity-10 border-success">
+                <div class="card-body text-center">
                     <i class="bi bi-check-circle text-success display-6"></i>
-                    <h4 class="text-success mt-2"><?= Seed::find()->where(['status' => 'available'])->count() ?></h4>
+                    <h4 class="text-success"><?= Seed::find()->where(['status' => Seed::STATUS_AVAILABLE])->count() ?></h4>
                     <p class="text-muted mb-0">Dostępnych</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card text-center border-info">
-                <div class="card-body">
-                    <i class="bi bi-calendar-plus text-info display-6"></i>
-                    <h4 class="text-info mt-2"><?= count(Seed::getSowingSeeds()) ?></h4>
-                    <p class="text-muted mb-0">Do wysiewu teraz</p>
+            <div class="card bg-warning bg-opacity-10 border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle text-warning display-6"></i>
+                    <h4 class="text-warning"><?= count(Seed::getSowingSeeds()) ?></h4>
+                    <p class="text-muted mb-0">Do wysiewu</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card text-center border-warning">
-                <div class="card-body">
-                    <i class="bi bi-exclamation-triangle text-warning display-6"></i>
-                    <h4 class="text-warning mt-2">
-<?= Seed::find()->where(['<=', 'expiry_date', date('Y-m-d', strtotime('+3 months'))])->andWhere(['!=', 'expiry_date', null])->count() ?>
-                    </h4>
-                    <p class="text-muted mb-0">Wygasa w 3 mies.</p>
+            <div class="card bg-secondary bg-opacity-10 border-secondary">
+                <div class="card-body text-center">
+                    <i class="bi bi-x-circle text-secondary display-6"></i>
+                    <h4 class="text-secondary"><?= Seed::find()->where(['status' => Seed::STATUS_USED])->count() ?></h4>
+                    <p class="text-muted mb-0">Zużytych</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Auto-submit search form on filter change
-        const filterSelects = document.querySelectorAll('#search-form select');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', function () {
-                document.getElementById('search-form').submit();
-            });
-        });
-
-        // Real-time search with debounce
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', function () {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    if (this.value.length >= 2 || this.value.length === 0) {
-                        document.getElementById('search-form').submit();
-                    }
-                }, 500);
-            });
-        }
-
-        // Card hover effects
-        const seedCards = document.querySelectorAll('.seed-card');
-        seedCards.forEach(card => {
-            card.addEventListener('mouseenter', function () {
-                this.style.transform = 'translateY(-5px)';
-                this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-            });
-
-            card.addEventListener('mouseleave', function () {
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-            });
-        });
-    });
-</script>
-
 <style>
-    .seed-card {
-        transition: all 0.3s ease;
-    }
+/* Ulepszone style dla 5 kolumn */
+.seed-card {
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+}
 
-    .seed-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
+.seed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #198754;
+}
 
-    .object-fit-cover {
-        object-fit: cover;
-    }
+.seed-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem;
+}
 
-    .btn-group .btn {
-        flex: 1;
-    }
+.seed-card .card-body {
+    font-size: 0.875rem;
+}
+
+.seed-card .card-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 0.5rem;
+}
+
+.seed-card .btn-group .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.priority-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    color: white;
+}
+
+.priority-high { background-color: #dc3545; }
+.priority-medium { background-color: #fd7e14; }
+.priority-low { background-color: #198754; }
+.priority-none { background-color: #6c757d; }
+
+/* Responsive dla 5 kolumn */
+@media (max-width: 1400px) {
+    .col-xl-2 { flex: 0 0 20%; max-width: 20%; } /* 5 kolumn na XL */
+}
+
+@media (max-width: 1200px) {
+    .col-lg-3 { flex: 0 0 25%; max-width: 25%; } /* 4 kolumny na LG */
+}
+
+@media (max-width: 768px) {
+    .col-md-4 { flex: 0 0 33.333333%; max-width: 33.333333%; } /* 3 kolumny na MD */
+}
+
+@media (max-width: 576px) {
+    .col-sm-6 { flex: 0 0 50%; max-width: 50%; } /* 2 kolumny na SM */
+}
+
+/* Mniejsze marginesy */
+.row.g-2 > * {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+.row.g-2 {
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+}
 </style>

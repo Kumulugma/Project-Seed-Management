@@ -1,7 +1,7 @@
 <?php
 /**
  * LOKALIZACJA: models/Seed.php
- * POPRAWIONY MODEL Z OBSŁUGĄ DAT MM-DD
+ * POPRAWIONY MODEL Z OBSŁUGĄ DAT MM-DD I POLEM COMPANY
  */
 
 namespace app\models;
@@ -46,7 +46,7 @@ class Seed extends ActiveRecord
             [['purchase_year', 'priority'], 'integer'],
             [['purchase_year'], 'integer', 'min' => 2000, 'max' => 2030],
             [['priority'], 'integer', 'min' => 0, 'max' => 10],
-            [['name'], 'string', 'max' => 255],
+            [['name', 'company'], 'string', 'max' => 255],
             [['image_path'], 'string', 'max' => 255],
             
             // POPRAWIONA WALIDACJA DAT MM-DD
@@ -116,6 +116,7 @@ class Seed extends ActiveRecord
         return [
             'id' => 'ID',
             'name' => 'Nazwa',
+            'company' => 'Firma/Producent',
             'description' => 'Opis',
             'notes' => 'Notatki',
             'image_path' => 'Zdjęcie opakowania',
@@ -161,50 +162,78 @@ class Seed extends ActiveRecord
     }
 
     /**
-     * Hook po wczytaniu - konwertuj daty MM-DD do pełnych dat dla formularza
+     * Hook po wczytaniu
      */
     public function afterFind()
     {
         parent::afterFind();
-        
-        // Te konwersje są potrzebne tylko do wyświetlania w niektórych miejscach
-        // Podstawowe przechowywanie pozostaje MM-DD
+        // Przygotuj upload pliku jeśli jest załadowany
+        if ($this->image_path) {
+            $uploadPath = Yii::getAlias('@webroot') . '/uploads/' . $this->image_path;
+            if (!file_exists($uploadPath)) {
+                $this->image_path = null;
+            }
+        }
     }
 
     /**
-     * Konwertuje datę MM-DD na pełną datę dla aktualnego roku (do wyświetlania)
+     * Hook przed zapisem pliku
      */
-    public function getFullSowingDate($field, $year = null)
+    public function upload()
     {
-        if ($year === null) {
-            $year = date('Y');
+        if ($this->validate() && $this->imageFile) {
+            $uploadPath = Yii::getAlias('@webroot') . '/uploads/';
+            
+            // Utwórz katalog jeśli nie istnieje
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
+            // Generuj unikalną nazwę pliku
+            $fileName = uniqid() . '.' . $this->imageFile->extension;
+            $fullPath = $uploadPath . $fileName;
+            
+            // Usuń stary plik jeśli istnieje
+            if ($this->image_path) {
+                $oldFile = $uploadPath . $this->image_path;
+                if (file_exists($oldFile)) {
+                    unlink($oldFile);
+                }
+            }
+            
+            // Zapisz nowy plik
+            if ($this->imageFile->saveAs($fullPath)) {
+                $this->image_path = $fileName;
+                return true;
+            }
         }
-        
-        $monthDay = $this->$field;
-        if (!$monthDay || !preg_match('/^\d{2}-\d{2}$/', $monthDay)) {
-            return null;
-        }
-        
-        return $year . '-' . $monthDay;
+        return false;
     }
 
     /**
-     * Zwraca sformatowaną datę do wyświetlania (dd.mm)
+     * Hook przed zapisem do obsługi uploadu
      */
-    public function getFormattedSowingDate($field)
+    public function save($runValidation = true, $attributeNames = null)
     {
-        $monthDay = $this->$field;
-        if (!$monthDay || !preg_match('/^(\d{2})-(\d{2})$/', $monthDay, $matches)) {
-            return '';
+        if ($this->imageFile) {
+            $this->upload();
         }
         
-        return $matches[2] . '.' . $matches[1]; // DD.MM
+        return parent::save($runValidation, $attributeNames);
     }
 
     /**
-     * Pobiera nasiona do wysiewu w danym terminie
+     * Pobiera nasiona w aktualnym okresie wysiewu - ALIAS dla kompatybilności
      */
     public static function getSowingSeeds($date = null)
+    {
+        return self::getCurrentSeeds($date)->all();
+    }
+
+    /**
+     * Pobiera nasiona w aktualnym okresie wysiewu
+     */
+    public static function getCurrentSeeds($date = null)
     {
         if ($date === null) {
             $date = date('Y-m-d');
@@ -216,13 +245,14 @@ class Seed extends ActiveRecord
             ->where(['status' => self::STATUS_AVAILABLE])
             ->andWhere([
                 'or',
-                // Normalny przypadek - sowing_start <= current <= sowing_end
+                // Normalny przypadek (np. 03-01 do 05-31)
                 [
                     'and',
+                    ['<=', 'sowing_start', 'sowing_end'],
                     ['<=', 'sowing_start', $currentMonthDay],
                     ['>=', 'sowing_end', $currentMonthDay]
                 ],
-                // Przypadek przejścia przez nowy rok (np. 12-01 do 02-28)
+                // Przejście przez nowy rok (np. 12-01 do 02-28)
                 [
                     'and',
                     ['>', 'sowing_start', 'sowing_end'],
@@ -233,8 +263,7 @@ class Seed extends ActiveRecord
                     ]
                 ]
             ])
-            ->orderBy(['priority' => SORT_DESC, 'name' => SORT_ASC])
-            ->all();
+            ->orderBy(['priority' => SORT_DESC, 'name' => SORT_ASC]);
     }
 
     /**
@@ -257,6 +286,21 @@ class Seed extends ActiveRecord
             // Przejście przez nowy rok (np. 12-01 do 02-28)
             return $currentMonthDay >= $sowingStart || $currentMonthDay <= $sowingEnd;
         }
+    }
+
+    /**
+     * Formatuje datę MM-DD do czytelnego formatu
+     */
+    public function getFormattedSowingDate($attribute)
+    {
+        $value = $this->$attribute;
+        if (!$value) return null;
+        
+        if (preg_match('/^(\d{2})-(\d{2})$/', $value, $matches)) {
+            return $matches[2] . '.' . $matches[1]; // DD.MM
+        }
+        
+        return $value;
     }
 
     /**
@@ -341,46 +385,29 @@ class Seed extends ActiveRecord
     }
 
     /**
-     * Upload pliku zdjęcia
+     * Pobiera kolor prioritetu dla CSS
      */
-    public function upload()
+    public function getPriorityClass()
     {
-        if ($this->validate() && $this->imageFile) {
-            $fileName = time() . '_' . uniqid() . '.' . $this->imageFile->extension;
-            $filePath = Yii::getAlias('@webroot/uploads/') . $fileName;
-            
-            if ($this->imageFile->saveAs($filePath)) {
-                // Usuń poprzednie zdjęcie jeśli istnieje
-                if ($this->image_path) {
-                    $oldFile = Yii::getAlias('@webroot/uploads/') . $this->image_path;
-                    if (file_exists($oldFile)) {
-                        unlink($oldFile);
-                    }
-                }
-                
-                $this->image_path = $fileName;
-                return true;
-            }
-        }
-        return false;
+        if ($this->priority >= 8) return 'high';
+        if ($this->priority >= 5) return 'medium';
+        if ($this->priority > 0) return 'low';
+        return 'none';
     }
 
     /**
-     * Relacja z wysialiskami
+     * Pobiera listę dostępnych firm/producentów
      */
-    public function getSownSeeds()
+    public static function getCompanyOptions()
     {
-        return $this->hasMany(SownSeed::class, ['seed_id' => 'id']);
-    }
-
-    /**
-     * Zwraca ścieżkę do zdjęcia
-     */
-    public function getImageUrl()
-    {
-        if ($this->image_path) {
-            return Yii::getAlias('@web/uploads/') . $this->image_path;
-        }
-        return null;
+        $companies = self::find()
+            ->select('company')
+            ->where(['not', ['company' => null]])
+            ->andWhere(['not', ['company' => '']])
+            ->distinct()
+            ->orderBy(['company' => SORT_ASC])
+            ->column();
+        
+        return array_combine($companies, $companies);
     }
 }

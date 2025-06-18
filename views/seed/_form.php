@@ -1,7 +1,7 @@
 <?php
 /**
  * LOKALIZACJA: views/seed/_form.php
- * POPRAWIONY FORMULARZ Z POLAMI MM-DD
+ * POPRAWIONY FORMULARZ Z POLAMI MM-DD I COMPANY BEZ BLOKOWANIA
  */
 
 use yii\helpers\Html;
@@ -16,8 +16,11 @@ use yii\widgets\ActiveForm;
 
     <?php $form = ActiveForm::begin([
         'options' => ['enctype' => 'multipart/form-data'],
-        'enableAjaxValidation' => false, // Wyłącz AJAX walidację
-        'enableClientValidation' => true,
+        'enableAjaxValidation' => false,
+        'enableClientValidation' => false, // WYŁĄCZONE - to powodowało blokowanie
+        'validateOnSubmit' => false,
+        'validateOnChange' => false,
+        'validateOnBlur' => false,
     ]); ?>
 
     <div class="row g-4">
@@ -36,6 +39,20 @@ use yii\widgets\ActiveForm;
                         'required' => true
                     ])->label('Nazwa <span class="text-danger">*</span>', ['encode' => false]) ?>
 
+                    <?= $form->field($model, 'company')->textInput([
+                        'maxlength' => true, 
+                        'placeholder' => 'Nazwa firmy/producenta (np. Vilmorin, Torseed, W. Legutko)',
+                        'class' => 'form-control',
+                        'list' => 'company-suggestions'
+                    ])->label('Firma/Producent') ?>
+                    
+                    <!-- Datalist dla podpowiedzi firm -->
+                    <datalist id="company-suggestions">
+                        <?php foreach (\app\models\Seed::getCompanyOptions() as $company): ?>
+                            <option value="<?= Html::encode($company) ?>">
+                        <?php endforeach; ?>
+                    </datalist>
+
                     <?= $form->field($model, 'description')->textarea([
                         'rows' => 3, 
                         'placeholder' => 'Opis odmiany, charakterystyczne cechy...',
@@ -49,93 +66,70 @@ use yii\widgets\ActiveForm;
                     ]) ?>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-4">
-            <div class="card">
+            <div class="card mt-4">
                 <div class="card-header bg-success text-white">
                     <h5 class="card-title mb-0">
-                        <i class="bi bi-image me-2"></i>Zdjęcie opakowania
-                    </h5>
-                </div>
-                <div class="card-body text-center">
-                    <?php if ($model->image_path): ?>
-                        <img src="<?= $model->getImageUrl() ?>" class="img-thumbnail mb-3" style="max-width: 150px;">
-                        <br>
-                    <?php endif; ?>
-                    
-                    <?= $form->field($model, 'imageFile')->fileInput([
-                        'accept' => 'image/*',
-                        'class' => 'form-control'
-                    ])->label('Wybierz zdjęcie') ?>
-                    
-                    <small class="text-muted">
-                        Formaty: JPG, PNG, GIF (max 2MB)
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4 mt-2">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-warning text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-sliders me-2"></i>Parametry rośliny
+                        <i class="bi bi-graph-up me-2"></i>Charakterystyka rośliny
                     </h5>
                 </div>
                 <div class="card-body">
-                    <?= $form->field($model, 'type')->dropDownList(
-                        $model->getTypeOptions(),
-                        [
-                            'prompt' => 'Wybierz typ...',
-                            'class' => 'form-select',
-                            'required' => true
-                        ]
-                    )->label('Typ <span class="text-danger">*</span>', ['encode' => false]) ?>
-
-                    <?= $form->field($model, 'height')->dropDownList(
-                        $model->getHeightOptions(),
-                        [
-                            'prompt' => 'Wybierz wysokość...',
-                            'class' => 'form-select',
-                            'required' => true
-                        ]
-                    )->label('Wysokość rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
-
-                    <?= $form->field($model, 'plant_type')->dropDownList(
-                        $model->getPlantTypeOptions(),
-                        [
-                            'prompt' => 'Wybierz typ rośliny...',
-                            'class' => 'form-select',
-                            'required' => true
-                        ]
-                    )->label('Typ rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
-
-                    <div class="priority-field">
-                        <?= $form->field($model, 'priority')->textInput([
-                            'type' => 'number', 
-                            'min' => 0, 
-                            'max' => 10, 
-                            'value' => $model->priority ?: 0,
-                            'class' => 'form-control',
-                            'onchange' => 'updatePriorityPreview(this.value)'
-                        ])->hint('0 = najniższy priorytet, 10 = najwyższy priorytet') ?>
-                        <div class="mt-2">
-                            <span class="priority-badge priority-none" id="priority-preview">0</span>
-                            <small class="text-muted ms-2">Podgląd priorytetu</small>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'type')->dropDownList(
+                                $model->getTypeOptions(),
+                                [
+                                    'class' => 'form-select',
+                                    'prompt' => 'Wybierz typ...'
+                                ]
+                            )->label('Typ <span class="text-danger">*</span>', ['encode' => false]) ?>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'height')->dropDownList(
+                                $model->getHeightOptions(),
+                                [
+                                    'class' => 'form-select',
+                                    'prompt' => 'Wybierz wysokość...'
+                                ]
+                            )->label('Wysokość rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'plant_type')->dropDownList(
+                                $model->getPlantTypeOptions(),
+                                [
+                                    'class' => 'form-select',
+                                    'prompt' => 'Wybierz typ rośliny...'
+                                ]
+                            )->label('Typ rośliny <span class="text-danger">*</span>', ['encode' => false]) ?>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Priorytet (0-10)</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <?= $form->field($model, 'priority', ['template' => '{input}'])->textInput([
+                                    'type' => 'range',
+                                    'min' => 0,
+                                    'max' => 10,
+                                    'value' => $model->priority ?: 0,
+                                    'class' => 'form-range',
+                                    'oninput' => 'updatePriorityPreview(this.value)'
+                                ]) ?>
+                                <span id="priority-preview" class="priority-badge priority-none">0</span>
+                            </div>
+                            <small class="text-muted">Wyższy priorytet = ważniejsze nasiona</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="card">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-warning text-dark">
                     <h5 class="card-title mb-0">
-                        <i class="bi bi-calendar3 me-2"></i>Okresy i daty
+                        <i class="bi bi-calendar-event me-2"></i>Okresy i daty
                     </h5>
                 </div>
                 <div class="card-body">
@@ -156,18 +150,6 @@ use yii\widgets\ActiveForm;
                         'maxlength' => 5,
                         'title' => 'Format: MM-DD (miesiąc-dzień, np. 05-30 dla 30 maja)'
                     ])->label('Koniec wysiewu <span class="text-danger">*</span>', ['encode' => false]) ?>
-                    
-                    <div class="alert alert-info">
-                        <small>
-                            <i class="bi bi-info-circle me-1"></i>
-                            <strong>Format:</strong> MM-DD (miesiąc-dzień)<br>
-                            <strong>Przykłady:</strong><br>
-                            • <code>03-15</code> = 15 marca<br>
-                            • <code>05-30</code> = 30 maja<br>
-                            • <code>12-01</code> do <code>02-28</code> = grudzień-luty<br>
-                            <small class="text-muted">Okres może przechodzić przez nowy rok.</small>
-                        </small>
-                    </div>
 
                     <?= $form->field($model, 'expiry_date')->input('date', [
                         'class' => 'form-control'
@@ -185,6 +167,35 @@ use yii\widgets\ActiveForm;
                         $model->getStatusOptions(),
                         ['class' => 'form-select']
                     ) ?>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-image me-2"></i>Zdjęcie opakowania
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?php if ($model->image_path && file_exists(Yii::getAlias('@webroot') . '/uploads/' . $model->image_path)): ?>
+                        <div class="text-center mb-3">
+                            <img src="/uploads/<?= Html::encode($model->image_path) ?>" 
+                                 class="img-thumbnail" 
+                                 style="max-height: 200px; max-width: 100%;"
+                                 alt="Aktualne zdjęcie">
+                            <p class="small text-muted mt-2">Aktualne zdjęcie</p>
+                        </div>
+                    <?php endif; ?>
+
+                    <?= $form->field($model, 'imageFile')->fileInput([
+                        'class' => 'form-control',
+                        'accept' => 'image/*'
+                    ])->label('Nowe zdjęcie') ?>
+                    
+                    <small class="text-muted">
+                        Obsługiwane formaty: JPG, PNG, GIF<br>
+                        Maksymalny rozmiar: 2MB
+                    </small>
                 </div>
             </div>
         </div>
@@ -224,6 +235,8 @@ use yii\widgets\ActiveForm;
 <script>
 function updatePriorityPreview(value) {
     const preview = document.getElementById('priority-preview');
+    if (!preview) return;
+    
     preview.textContent = value;
     
     // Usuń wszystkie klasy priority
@@ -248,15 +261,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePriorityPreview(priorityInput.value || 0);
     }
     
-    // Dodaj walidację po stronie klienta dla dat MM-DD
+    // Walidacja dat MM-DD (nieblokująca)
     const sowingInputs = document.querySelectorAll('input[name="Seed[sowing_start]"], input[name="Seed[sowing_end]"]');
     sowingInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            validateMonthDayInput(this);
-        });
-        
         input.addEventListener('blur', function() {
-            formatMonthDayInput(this);
+            validateMonthDayInput(this);
         });
     });
 });
@@ -271,6 +280,8 @@ function validateMonthDayInput(input) {
         existingError.remove();
     }
     
+    input.classList.remove('is-invalid');
+    
     if (value && !pattern.test(value)) {
         input.classList.add('is-invalid');
         
@@ -278,30 +289,6 @@ function validateMonthDayInput(input) {
         errorDiv.className = 'invalid-feedback validation-error';
         errorDiv.textContent = 'Format: MM-DD (np. 03-15)';
         input.parentNode.appendChild(errorDiv);
-    } else {
-        input.classList.remove('is-invalid');
     }
-}
-
-function formatMonthDayInput(input) {
-    let value = input.value.replace(/[^\d-]/g, ''); // Usuń wszystko oprócz cyfr i myślnika
-    
-    // Automatyczne formatowanie podczas pisania
-    if (value.length === 3 && value.indexOf('-') === -1) {
-        value = value.slice(0, 2) + '-' + value.slice(2);
-    }
-    
-    // Dodaj zera wiodące jeśli potrzeba
-    if (value.length === 5) {
-        const parts = value.split('-');
-        if (parts.length === 2) {
-            const month = parts[0].padStart(2, '0');
-            const day = parts[1].padStart(2, '0');
-            value = month + '-' + day;
-        }
-    }
-    
-    input.value = value;
-    validateMonthDayInput(input);
 }
 </script>
