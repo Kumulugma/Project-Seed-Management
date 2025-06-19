@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Usuń loading po 3 sekundach (na wypadek błędu)
                 setTimeout(() => {
                     this.classList.remove('loading');
-                }, 3000);
+                }, 500);
             }
         });
     });

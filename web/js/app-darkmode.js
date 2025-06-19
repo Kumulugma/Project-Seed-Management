@@ -226,7 +226,7 @@ function initializeLoadingEffects() {
                 if (this.target === '_blank') return;
                 
                 console.log('Loading dla linku:', this.href);
-                showLoading(this, { duration: 3000 });
+                showLoading(this, { duration: 500 });
             });
         }
     });
@@ -288,7 +288,7 @@ function initializeLoadingEffects() {
             if (this.type === 'submit') return;
             
             console.log('Loading dla przycisku');
-            showLoading(this, { duration: 2000 });
+            showLoading(this, { duration: 500 });
         });
     });
 }
